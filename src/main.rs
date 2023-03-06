@@ -17,10 +17,32 @@ use std::sync::{Arc, Mutex};
 use sysinfo::{CpuExt, System, SystemExt};
 use tokio::sync::broadcast;
 
+#[derive(Clone)]
+struct DynamicState {
+    ws_count: u32,
+    ws_next_id: u32,
+}
+
+impl Default for DynamicState {
+    fn default() -> Self {
+        DynamicState {
+            ws_count: 0,
+            ws_next_id: 0,
+        }
+    }
+}
+
+#[derive(Clone)]
+struct AppState {
+    tx: broadcast::Sender<Snapshot>,
+    dynamic_state: Arc<Mutex<DynamicState>>,
+    // ws_count: Arc<Mutex<u32>>,
+    // ws_total_count: Arc<Mutex<u32>>,
+}
+
 #[derive(Clone, Debug, Serialize)]
 struct WsData {
     ws_count: u32,
-    ws_total_count: u32,
     ws_id: u32,
     cpu_data: Vec<(usize, f32)>,
 }
@@ -35,8 +57,9 @@ async fn main() {
 
     let app_state = AppState {
         tx: tx.clone(),
-        ws_count: Arc::new(Mutex::new(0u32)),
-        ws_total_count: Arc::new(Mutex::new(0u32)),
+        dynamic_state: Arc::new(Mutex::new(DynamicState::default())),
+        // ws_count: Arc::new(Mutex::new(0u32)),
+        // ws_total_count: Arc::new(Mutex::new(0u32)),
     };
 
     // let mut_app_state = Arc::new(Mutex::new(app_state));
@@ -60,14 +83,17 @@ async fn main() {
                 .map(|cpu| (cpu.0, cpu.1.cpu_usage()))
                 .collect();
 
-            let data = WsData {
-                ws_id: 0,
-                ws_count: *app_state.ws_count.lock().unwrap(),
-                ws_total_count: 0,
-                cpu_data: v,
-            };
+            {
+                let dynamic_state = app_state.dynamic_state.lock().unwrap();
 
-            let _ = tx.send(data);
+                let data = WsData {
+                    ws_id: 0,
+                    ws_count: dynamic_state.ws_count,
+                    cpu_data: v,
+                };
+
+                let _ = tx.send(data);
+            }
             std::thread::sleep(System::MINIMUM_CPU_UPDATE_INTERVAL);
         }
     });
@@ -77,13 +103,6 @@ async fn main() {
     println!("Listening on http://{addr} ...");
 
     server.await.unwrap();
-}
-
-#[derive(Clone)]
-struct AppState {
-    tx: broadcast::Sender<Snapshot>,
-    ws_count: Arc<Mutex<u32>>,
-    ws_total_count: Arc<Mutex<u32>>,
 }
 
 #[axum::debug_handler]
@@ -119,13 +138,12 @@ async fn realtime_cpus_get(
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     let id = {
-        let mut ws_count = state.ws_count.lock().unwrap();
-        *ws_count += 1u32;
+        let mut dynamic_state = state.dynamic_state.lock().unwrap();
 
-        let mut ws_total_count = state.ws_total_count.lock().unwrap();
-        *ws_total_count += 1u32;
+        dynamic_state.ws_count += 1u32;
+        dynamic_state.ws_next_id += 1u32;
 
-        *ws_total_count
+        dynamic_state.ws_next_id
     };
 
     ws.on_upgrade(move |ws: WebSocket| async move { realtime_cpus_stream(state, id, ws).await })
@@ -168,6 +186,7 @@ async fn socket_reader(app_state: AppState, mut ws: SplitStream<WebSocket>) {
     eprintln!("Done receiving");
 
     // We are done receiving as socket has closed
-    let mut ws_count = app_state.ws_count.lock().unwrap();
-    *ws_count -= 1u32;
+    let mut dynamic_state = app_state.dynamic_state.lock().unwrap();
+
+    dynamic_state.ws_count -= 1u32;
 }

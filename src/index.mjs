@@ -36,8 +36,7 @@ function App(props) {
 // update();
 // setInterval(update, 200);
 
-let url = new URL("/realtime/cpus", window.location.href);
-url.protocol = url.protocol.replace("http", "ws");
+let url = new URL("/realtime/cpus", window.location.href.replace("http", "ws"));
 
 let ws_events = 0;
 
