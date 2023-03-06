@@ -94,6 +94,7 @@ async fn main() {
 
                 let _ = tx.send(data);
             }
+
             std::thread::sleep(System::MINIMUM_CPU_UPDATE_INTERVAL);
         }
     });
@@ -177,7 +178,12 @@ async fn realtime_cpus_stream(app_state: AppState, id: u32, ws: WebSocket) {
 async fn socket_reader(app_state: AppState, mut ws: SplitStream<WebSocket>) {
     while let Some(res) = ws.next().await {
         if let Ok(msg) = res {
-            eprintln!("Got: {:?}", msg);
+            match msg {
+                Message::Text(s) => {
+                    eprintln!("Got: {}", s);
+                }
+                _ => {}
+            }
         } else {
             eprintln!("Got: Error!");
         }

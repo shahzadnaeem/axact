@@ -15,6 +15,22 @@ main {
   gap: 0.5em;
 }
 
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  padding: 1em;
+}
+
+.form div {
+  display: grid;
+  grid-template-columns: 5em 16em;
+}
+
+.form div button {
+  grid-column: 1 / -1;
+}
+
 .cpu-info {
   background: #264653;
   color: white;
@@ -22,7 +38,7 @@ main {
   border: 1px solid rgba(245, 245, 200, 0.193);
   border-radius: 4px;
 
-  width: 20em;
+  width: 24em;
   height: 2em;
   padding-left: 0.5em;
 
