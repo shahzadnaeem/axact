@@ -17,8 +17,6 @@ let ws = new WebSocket(url.href);
 ws.onmessage = (ev) => {
   let json = JSON.parse(ev.data);
 
-  // console.log(json);
-
   ws_id = json.ws_id;
   ws_events++;
 

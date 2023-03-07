@@ -71,7 +71,7 @@ async fn main() {
 
     let router = Router::new()
         // Serve all files in 'src'
-        .nest_service("/", ServeDir::new("src"))
+        .nest_service("/", ServeDir::new("public"))
         .route("/realtime/cpus", get(realtime_cpus_get))
         .with_state(app_state.clone());
 
