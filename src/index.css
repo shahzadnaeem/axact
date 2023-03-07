@@ -9,10 +9,30 @@ body {
 }
 
 main {
+  width: 30em;
+  margin-inline: auto;
   color: lightskyblue;
   display: flex;
   flex-direction: column;
   gap: 0.5em;
+}
+
+section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+a {
+  margin-inline: auto;
+  font-size: x-large;
+  color: inherit;
+  opacity: 50%;
+}
+
+a:hover {
+  opacity: 100%;
+  transition: opacity 0.1s;
 }
 
 .form {
@@ -20,6 +40,7 @@ main {
   flex-direction: column;
   gap: 0.5em;
   padding: 1em;
+  margin-inline: auto;
 }
 
 .form div {
@@ -29,6 +50,17 @@ main {
 
 .form div button {
   grid-column: 1 / -1;
+  background-color: inherit;
+  color: greenyellow;
+  border: 1px solid greenyellow;
+  border-radius: 4px;
+  opacity: 50%;
+}
+
+.form div button:hover {
+  opacity: 100%;
+  cursor: pointer;
+  transition: opacity 0.1s;
 }
 
 .cpu-info {
@@ -38,7 +70,7 @@ main {
   border: 1px solid rgba(245, 245, 200, 0.193);
   border-radius: 4px;
 
-  width: 24em;
+  /* width: 24em; */
   height: 2em;
   padding-left: 0.5em;
 

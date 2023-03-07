@@ -17,7 +17,7 @@ let ws = new WebSocket(url.href);
 ws.onmessage = (ev) => {
   let json = JSON.parse(ev.data);
 
-  console.log(json);
+  // console.log(json);
 
   ws_id = json.ws_id;
   ws_events++;
@@ -30,6 +30,7 @@ ws.onmessage = (ev) => {
 
 function App(props) {
   const [name, setName] = useState(props.wsUsername);
+  const [editName, setEditName] = useState(props.wsUsername);
   const [message, setMessage] = useState("");
   const [doSend, setDoSend] = useState(false);
 
@@ -41,6 +42,8 @@ function App(props) {
     };
 
     ws.send(JSON.stringify(data));
+
+    document.title = name;
   }, [name]);
 
   useEffect(() => {
@@ -58,8 +61,12 @@ function App(props) {
   const handleName = (ev) => {
     const newName = ev.target.value;
 
-    if (newName !== "" && newName !== name) {
-      setName(newName);
+    setEditName(newName);
+  };
+
+  const handleNameEnter = (ev) => {
+    if (ev.key === "Enter" && editName !== "") {
+      setName(editName);
     }
   };
 
@@ -76,15 +83,17 @@ function App(props) {
   return html`
     <main>
       <h3>
-        WS #${props.wsId} - ${props.wsUsername} - Update #${props.wsEvents} - ${
-    props.wsCount
-  } Web
-        Sockets
+        Client #${props.wsId} - ${props.wsUsername} - Update #${
+    props.wsEvents
+  } - ${props.wsCount} ${props.wsCount > 1 ? "Clients" : "Client"}
       </h3>
+
+      <a href="${window.location.href}" target="_blank">Duplicate</a>
+
       <section class="form">
         <div>
           <label for="name">Name: </label>
-          <input id="name" type="text" placeholder="Enter your name" value=${name} onInput=${handleName}></input>
+          <input id="name" type="text" placeholder="Enter your name" value=${editName} onInput=${handleName} onKeyUp=${handleNameEnter}></input>
         </div>
 
         <div>

@@ -227,7 +227,7 @@ async fn socket_reader(app_state: AppState, id: u32, mut ws: SplitStream<WebSock
         }
     }
 
-    eprintln!("Done receiving");
+    eprintln!("Done receiving for #{}", id);
 
     // We are done receiving as socket has closed
     let mut dynamic_state = app_state.dynamic_state.lock().unwrap();
