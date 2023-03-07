@@ -17,24 +17,27 @@ let ws = new WebSocket(url.href);
 ws.onmessage = (ev) => {
   let json = JSON.parse(ev.data);
 
+  console.log(json);
+
   ws_id = json.ws_id;
   ws_events++;
 
   render(
-    html`<${App} cpus=${json.cpu_data} wsCount=${json.ws_count} wsId=${json.ws_id} wsEvents=${ws_events}></${App}>`,
+    html`<${App} cpus=${json.cpu_data} wsCount=${json.ws_count} wsId=${json.ws_id} wsUsername=${json.ws_username} wsEvents=${ws_events}></${App}>`,
     document.body
   );
 };
 
 function App(props) {
-  const [name, setName] = useState(`Anon-${ws_id}`);
+  const [name, setName] = useState(props.wsUsername);
   const [message, setMessage] = useState("");
   const [doSend, setDoSend] = useState(false);
 
   useEffect(() => {
     let data = {
-      id: `${ws_id}`,
+      id: ws_id,
       name: `${name}`,
+      message: "",
     };
 
     ws.send(JSON.stringify(data));
@@ -43,7 +46,7 @@ function App(props) {
   useEffect(() => {
     if (message !== "") {
       let data = {
-        id: `${ws_id}`,
+        id: ws_id,
         name: `${name}`,
         message: `${message}`,
       };
@@ -73,7 +76,9 @@ function App(props) {
   return html`
     <main>
       <h3>
-        WS #${props.wsId} - Update #${props.wsEvents} - ${props.wsCount} Web
+        WS #${props.wsId} - ${props.wsUsername} - Update #${props.wsEvents} - ${
+    props.wsCount
+  } Web
         Sockets
       </h3>
       <section class="form">
@@ -90,9 +95,7 @@ function App(props) {
         <div>
           <button onClick=${sendMessage}>Send message!</button>
         </div>
-
-
-        </section>
+      </section>
       <section>
         ${props.cpus.map((cpu) => {
           return html`<div class="cpu-info">

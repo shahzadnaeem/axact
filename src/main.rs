@@ -12,8 +12,11 @@ use futures::{
     sink::SinkExt,
     stream::{SplitStream, StreamExt},
 };
-use serde::Serialize;
-use std::sync::{Arc, Mutex};
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 use sysinfo::{CpuExt, System, SystemExt};
 use tokio::sync::broadcast;
 
@@ -21,6 +24,7 @@ use tokio::sync::broadcast;
 struct DynamicState {
     ws_count: u32,
     ws_next_id: u32,
+    users: HashMap<u32, String>,
 }
 
 impl Default for DynamicState {
@@ -28,6 +32,7 @@ impl Default for DynamicState {
         DynamicState {
             ws_count: 0,
             ws_next_id: 0,
+            users: HashMap::new(),
         }
     }
 }
@@ -36,14 +41,20 @@ impl Default for DynamicState {
 struct AppState {
     tx: broadcast::Sender<Snapshot>,
     dynamic_state: Arc<Mutex<DynamicState>>,
-    // ws_count: Arc<Mutex<u32>>,
-    // ws_total_count: Arc<Mutex<u32>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct WsDataIn {
+    id: u32,
+    name: String,
+    message: String,
 }
 
 #[derive(Clone, Debug, Serialize)]
 struct WsData {
     ws_count: u32,
     ws_id: u32,
+    ws_username: String,
     cpu_data: Vec<(usize, f32)>,
 }
 
@@ -88,6 +99,7 @@ async fn main() {
 
                 let data = WsData {
                     ws_id: 0,
+                    ws_username: "".to_string(),
                     ws_count: dynamic_state.ws_count,
                     cpu_data: v,
                 };
@@ -144,7 +156,12 @@ async fn realtime_cpus_get(
         dynamic_state.ws_count += 1u32;
         dynamic_state.ws_next_id += 1u32;
 
-        dynamic_state.ws_next_id
+        let id = dynamic_state.ws_next_id;
+        dynamic_state.users.insert(id, format!("Unknown-{}", &id));
+
+        eprintln!("Users: {:?}", dynamic_state.users);
+
+        id
     };
 
     ws.on_upgrade(move |ws: WebSocket| async move { realtime_cpus_stream(state, id, ws).await })
@@ -155,11 +172,21 @@ async fn realtime_cpus_stream(app_state: AppState, id: u32, ws: WebSocket) {
 
     let cloned_app_state = app_state.clone();
 
-    tokio::spawn(socket_reader(app_state, receiver));
+    tokio::spawn(socket_reader(app_state, id, receiver));
 
     let mut rx = cloned_app_state.tx.subscribe();
     while let Ok(mut msg) = rx.recv().await {
         msg.ws_id = id;
+        msg.ws_username = {
+            let dynamic_state = cloned_app_state.dynamic_state.lock().unwrap();
+            let possible_user = dynamic_state.users.get(&id);
+            if let Some(user) = possible_user {
+                user.clone()
+            } else {
+                // User is gone, so we are done
+                break;
+            }
+        };
 
         let res = sender
             .send(Message::Text(serde_json::to_string(&msg).unwrap()))
@@ -175,12 +202,23 @@ async fn realtime_cpus_stream(app_state: AppState, id: u32, ws: WebSocket) {
     }
 }
 
-async fn socket_reader(app_state: AppState, mut ws: SplitStream<WebSocket>) {
+async fn socket_reader(app_state: AppState, id: u32, mut ws: SplitStream<WebSocket>) {
     while let Some(res) = ws.next().await {
         if let Ok(msg) = res {
             match msg {
                 Message::Text(s) => {
-                    eprintln!("Got: {}", s);
+                    let data: WsDataIn = serde_json::from_str(&s).unwrap();
+
+                    eprintln!(
+                        "Got: id: {} [{}], name: {}, message: {}",
+                        data.id,
+                        if data.id == id { "Valid" } else { "Invalid!" },
+                        data.name,
+                        data.message
+                    );
+
+                    let mut dynamic_state = app_state.dynamic_state.lock().unwrap();
+                    dynamic_state.users.insert(id, data.name);
                 }
                 _ => {}
             }
@@ -194,5 +232,6 @@ async fn socket_reader(app_state: AppState, mut ws: SplitStream<WebSocket>) {
     // We are done receiving as socket has closed
     let mut dynamic_state = app_state.dynamic_state.lock().unwrap();
 
+    dynamic_state.users.remove(&id);
     dynamic_state.ws_count -= 1u32;
 }
