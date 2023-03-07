@@ -25,9 +25,13 @@ section {
 
 a {
   margin-inline: auto;
+  padding-inline: 1em;
   font-size: x-large;
   color: inherit;
   opacity: 50%;
+  text-decoration: none;
+  border: 1px solid lightskyblue;
+  border-radius: 4px;
 }
 
 a:hover {

@@ -3,8 +3,7 @@ use axum::{
         ws::{Message, WebSocket},
         State, WebSocketUpgrade,
     },
-    http::Response,
-    response::{Html, IntoResponse},
+    response::IntoResponse,
     routing::get,
     Router, Server,
 };
@@ -19,17 +18,18 @@ use std::{
 };
 use sysinfo::{CpuExt, System, SystemExt};
 use tokio::sync::broadcast;
+use tower_http::services::ServeDir;
 
 #[derive(Clone)]
 struct DynamicState {
-    ws_next_id: u32,
+    client_id: u32,
     users: HashMap<u32, String>,
 }
 
 impl Default for DynamicState {
     fn default() -> Self {
         DynamicState {
-            ws_next_id: 0,
+            client_id: 0,
             users: HashMap::new(),
         }
     }
@@ -67,16 +67,11 @@ async fn main() {
     let app_state = AppState {
         tx: tx.clone(),
         dynamic_state: Arc::new(Mutex::new(DynamicState::default())),
-        // ws_count: Arc::new(Mutex::new(0u32)),
-        // ws_total_count: Arc::new(Mutex::new(0u32)),
     };
 
-    // let mut_app_state = Arc::new(Mutex::new(app_state));
-
     let router = Router::new()
-        .route("/", get(root_get))
-        .route("/index.mjs", get(indexmjs_get))
-        .route("/index.css", get(indexcss_get))
+        // Serve all files in 'src'
+        .nest_service("/", ServeDir::new("src"))
         .route("/realtime/cpus", get(realtime_cpus_get))
         .with_state(app_state.clone());
 
@@ -116,32 +111,7 @@ async fn main() {
     server.await.unwrap();
 }
 
-#[axum::debug_handler]
-async fn root_get() -> impl IntoResponse {
-    let markup = tokio::fs::read_to_string("src/index.html").await.unwrap();
-
-    Html(markup)
-}
-
-#[axum::debug_handler]
-async fn indexmjs_get() -> impl IntoResponse {
-    let markup = tokio::fs::read_to_string("src/index.mjs").await.unwrap();
-
-    Response::builder()
-        .header("content-type", "application/javascript;charset=utf-8")
-        .body(markup)
-        .unwrap()
-}
-
-#[axum::debug_handler]
-async fn indexcss_get() -> impl IntoResponse {
-    let markup = tokio::fs::read_to_string("src/index.css").await.unwrap();
-
-    Response::builder()
-        .header("content-type", "text/css;charset=utf-8")
-        .body(markup)
-        .unwrap()
-}
+// WS creation endpoint
 
 #[axum::debug_handler]
 async fn realtime_cpus_get(
@@ -151,9 +121,9 @@ async fn realtime_cpus_get(
     let id = {
         let mut dynamic_state = state.dynamic_state.lock().unwrap();
 
-        dynamic_state.ws_next_id += 1u32;
+        dynamic_state.client_id += 1u32;
 
-        let id = dynamic_state.ws_next_id;
+        let id = dynamic_state.client_id;
         dynamic_state.users.insert(id, format!("Unknown-{}", &id));
 
         eprintln!("Users: {:?}", dynamic_state.users);
@@ -163,6 +133,8 @@ async fn realtime_cpus_get(
 
     ws.on_upgrade(move |ws: WebSocket| async move { realtime_cpus_stream(state, id, ws).await })
 }
+
+// WS handlers
 
 async fn realtime_cpus_stream(app_state: AppState, id: u32, ws: WebSocket) {
     let (mut sender, receiver) = ws.split();
@@ -181,7 +153,7 @@ async fn realtime_cpus_stream(app_state: AppState, id: u32, ws: WebSocket) {
                 user.clone()
             } else {
                 // User is gone, so we are done
-                eprintln!("WS user gone!");
+                eprintln!("WS Client #{} gone!", id);
                 break;
             }
         };
@@ -193,7 +165,7 @@ async fn realtime_cpus_stream(app_state: AppState, id: u32, ws: WebSocket) {
         match res {
             Ok(_good) => {}
             Err(msg) => {
-                eprintln!("WS done {:?}", msg);
+                eprintln!("WS Client #{} done {:?}", id, msg);
                 break;
             }
         }
@@ -229,7 +201,7 @@ async fn socket_reader(app_state: AppState, id: u32, mut ws: SplitStream<WebSock
         }
     }
 
-    eprintln!("Done receiving for #{}", id);
+    eprintln!("Done receiving for WS Client #{}", id);
 
     // We are done receiving as socket has closed
     let mut dynamic_state = app_state.dynamic_state.lock().unwrap();
