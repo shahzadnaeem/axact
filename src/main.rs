@@ -22,7 +22,6 @@ use tokio::sync::broadcast;
 
 #[derive(Clone)]
 struct DynamicState {
-    ws_count: u32,
     ws_next_id: u32,
     users: HashMap<u32, String>,
 }
@@ -30,7 +29,6 @@ struct DynamicState {
 impl Default for DynamicState {
     fn default() -> Self {
         DynamicState {
-            ws_count: 0,
             ws_next_id: 0,
             users: HashMap::new(),
         }
@@ -100,7 +98,7 @@ async fn main() {
                 let data = WsData {
                     ws_id: 0,
                     ws_username: "".to_string(),
-                    ws_count: dynamic_state.ws_count,
+                    ws_count: dynamic_state.users.len() as u32,
                     cpu_data: v,
                 };
 
@@ -153,7 +151,6 @@ async fn realtime_cpus_get(
     let id = {
         let mut dynamic_state = state.dynamic_state.lock().unwrap();
 
-        dynamic_state.ws_count += 1u32;
         dynamic_state.ws_next_id += 1u32;
 
         let id = dynamic_state.ws_next_id;
@@ -184,6 +181,7 @@ async fn realtime_cpus_stream(app_state: AppState, id: u32, ws: WebSocket) {
                 user.clone()
             } else {
                 // User is gone, so we are done
+                eprintln!("WS user gone!");
                 break;
             }
         };
@@ -207,18 +205,22 @@ async fn socket_reader(app_state: AppState, id: u32, mut ws: SplitStream<WebSock
         if let Ok(msg) = res {
             match msg {
                 Message::Text(s) => {
-                    let data: WsDataIn = serde_json::from_str(&s).unwrap();
+                    let parsed: Result<WsDataIn, _> = serde_json::from_str(&s);
 
-                    eprintln!(
-                        "Got: id: {} [{}], name: {}, message: {}",
-                        data.id,
-                        if data.id == id { "Valid" } else { "Invalid!" },
-                        data.name,
-                        data.message
-                    );
+                    if let Ok(data) = parsed {
+                        eprintln!(
+                            "Got: id: {} [{}], name: {}, message: {}",
+                            data.id,
+                            if data.id == id { "Valid" } else { "Invalid!" },
+                            data.name,
+                            data.message
+                        );
 
-                    let mut dynamic_state = app_state.dynamic_state.lock().unwrap();
-                    dynamic_state.users.insert(id, data.name);
+                        let mut dynamic_state = app_state.dynamic_state.lock().unwrap();
+                        dynamic_state.users.insert(id, data.name);
+                    } else {
+                        eprintln!("Got: UKNOWN message: {}", s);
+                    }
                 }
                 _ => {}
             }
@@ -233,5 +235,4 @@ async fn socket_reader(app_state: AppState, id: u32, mut ws: SplitStream<WebSock
     let mut dynamic_state = app_state.dynamic_state.lock().unwrap();
 
     dynamic_state.users.remove(&id);
-    dynamic_state.ws_count -= 1u32;
 }
