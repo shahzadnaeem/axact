@@ -8,19 +8,24 @@ use axum::{
     Router, Server,
 };
 use futures::{
-    sink::SinkExt,
-    stream::{SplitStream, StreamExt},
+    stream::{SplitSink, SplitStream, StreamExt},
+    SinkExt,
 };
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
+    time::Duration,
 };
 use sysinfo::{CpuExt, System, SystemExt};
-use tokio::sync::broadcast;
+use tokio::{
+    sync::{broadcast, mpsc},
+    task::JoinSet,
+};
 use tower_http::services::ServeDir;
+use tracing_subscriber::filter::dynamic_filter_fn;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct DynamicState {
     client_id: u32,
     users: HashMap<u32, String>,
@@ -35,9 +40,21 @@ impl Default for DynamicState {
     }
 }
 
+#[derive(Debug)]
+struct SharedState {
+    req_tx: mpsc::Sender<Requests>,
+}
+
+impl SharedState {
+    pub fn new(req_tx: mpsc::Sender<Requests>) -> Self {
+        SharedState { req_tx }
+    }
+}
+
 #[derive(Clone)]
 struct AppState {
-    tx: broadcast::Sender<Snapshot>,
+    broadcast_tx: broadcast::Sender<Snapshot>,
+    shared_state: Arc<Mutex<SharedState>>,
     dynamic_state: Arc<Mutex<DynamicState>>,
 }
 
@@ -58,14 +75,37 @@ struct WsData {
 
 type Snapshot = WsData;
 
+//
+// TODO: Our outgoing messages
+//
+
+#[derive(Clone, Debug, Serialize)]
+struct ChatMessage {
+    username: String,
+    message: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+enum Requests {
+    Chat(ChatMessage),
+}
+
+type Request = Requests;
+
 #[tokio::main]
 async fn main() {
-    let (tx, _) = broadcast::channel::<Snapshot>(1);
+    const BROADCAST_CHANNEL_CAPACITY: usize = 1;
+
+    let (broadcast_tx, _) = broadcast::channel::<Snapshot>(BROADCAST_CHANNEL_CAPACITY);
+
+    // TODO: Need a second channel to receive messages for distribution from the clients
+    let (req_tx, mut req_rx) = mpsc::channel::<Requests>(100);
 
     tracing_subscriber::fmt::init();
 
     let app_state = AppState {
-        tx: tx.clone(),
+        broadcast_tx: broadcast_tx.clone(),
+        shared_state: Arc::new(Mutex::new(SharedState::new(req_tx))),
         dynamic_state: Arc::new(Mutex::new(DynamicState::default())),
     };
 
@@ -75,34 +115,7 @@ async fn main() {
         .route("/realtime/cpus", get(realtime_cpus_get))
         .with_state(app_state.clone());
 
-    // Update CPU usage in the background
-    tokio::task::spawn_blocking(move || {
-        let mut sys = System::new();
-        loop {
-            sys.refresh_cpu();
-            let v: Vec<_> = sys
-                .cpus()
-                .iter()
-                .enumerate()
-                .map(|cpu| (cpu.0, cpu.1.cpu_usage()))
-                .collect();
-
-            {
-                let dynamic_state = app_state.dynamic_state.lock().unwrap();
-
-                let data = WsData {
-                    ws_id: 0,
-                    ws_username: "".to_string(),
-                    ws_count: dynamic_state.users.len() as u32,
-                    cpu_data: v,
-                };
-
-                let _ = tx.send(data);
-            }
-
-            std::thread::sleep(System::MINIMUM_CPU_UPDATE_INTERVAL);
-        }
-    });
+    tokio::task::spawn_blocking(move || cpu_data_gen(app_state, broadcast_tx));
 
     let server = Server::bind(&"0.0.0.0:7032".parse().unwrap()).serve(router.into_make_service());
     let addr = server.local_addr();
@@ -111,49 +124,105 @@ async fn main() {
     server.await.unwrap();
 }
 
+// ============================================================================
+// CPU data generator - sends via broadcast_tx
+// NOTE: Will block when the channel is full
+//
+
+fn cpu_data_gen(app_state: AppState, broadcast_tx: broadcast::Sender<Snapshot>) {
+    let mut sys = System::new();
+
+    loop {
+        let num_users = {
+            let dynamic_state = app_state.dynamic_state.lock().unwrap();
+            dynamic_state.users.len() as u32
+        };
+
+        if num_users != 0 {
+            sys.refresh_cpu();
+            let v: Vec<_> = sys
+                .cpus()
+                .iter()
+                .enumerate()
+                .map(|cpu| (cpu.0, cpu.1.cpu_usage()))
+                .collect();
+
+            let data = WsData {
+                ws_id: 0,
+                ws_username: "".to_string(),
+                ws_count: num_users,
+                cpu_data: v,
+            };
+            let _ = broadcast_tx.send(data);
+
+            std::thread::sleep(System::MINIMUM_CPU_UPDATE_INTERVAL);
+        } else {
+            println!("No users, sleeping for 1s");
+            std::thread::sleep(Duration::from_secs(1));
+        }
+    }
+}
+
+// ============================================================================
 // WS creation endpoint
+//
 
 #[axum::debug_handler]
 async fn realtime_cpus_get(
     ws: WebSocketUpgrade,
-    State(state): State<AppState>,
+    State(app_state): State<AppState>,
 ) -> impl IntoResponse {
-    let id = {
-        let mut dynamic_state = state.dynamic_state.lock().unwrap();
+    let id = get_next_user_id(&app_state);
 
-        dynamic_state.client_id += 1u32;
-
-        let id = dynamic_state.client_id;
-        dynamic_state.users.insert(id, format!("Unknown-{}", &id));
-
-        eprintln!("Users: {:?}", dynamic_state.users);
-
-        id
-    };
-
-    ws.on_upgrade(move |ws: WebSocket| async move { realtime_cpus_stream(state, id, ws).await })
+    ws.on_upgrade(move |ws: WebSocket| async move { realtime_cpus_stream(app_state, id, ws).await })
 }
 
+fn get_next_user_id(app_state: &AppState) -> u32 {
+    let mut dynamic_state = app_state.dynamic_state.lock().unwrap();
+
+    dynamic_state.client_id += 1u32;
+
+    let id = dynamic_state.client_id;
+    dynamic_state.users.insert(id, format!("Unknown-{}", &id));
+
+    id
+}
+
+// ============================================================================
 // WS handlers
+//
 
 async fn realtime_cpus_stream(app_state: AppState, id: u32, ws: WebSocket) {
-    let (mut sender, receiver) = ws.split();
+    let (sender, receiver) = ws.split();
 
-    let cloned_app_state = app_state.clone();
+    let mut tasks = JoinSet::new();
 
-    tokio::spawn(socket_reader(app_state, id, receiver));
+    tasks.spawn(rt_cpus_reader(app_state.clone(), id, receiver));
+    tasks.spawn(rt_cpus_writer(app_state, id, sender));
 
-    let mut rx = cloned_app_state.tx.subscribe();
+    println!("WS STARTED for: ID #{}", id);
+
+    while let Some(_) = tasks.join_next().await {}
+
+    println!("WS DONE for: ID #{}", id);
+}
+
+// async fn socket_writer()
+async fn rt_cpus_writer(app_state: AppState, id: u32, mut sender: SplitSink<WebSocket, Message>) {
+    //
+    // Get a receiver for the
+    //
+    let mut rx = app_state.broadcast_tx.subscribe();
+
     while let Ok(mut msg) = rx.recv().await {
         msg.ws_id = id;
         msg.ws_username = {
-            let dynamic_state = cloned_app_state.dynamic_state.lock().unwrap();
+            let dynamic_state = app_state.dynamic_state.lock().unwrap();
             let possible_user = dynamic_state.users.get(&id);
             if let Some(user) = possible_user {
                 user.clone()
             } else {
-                // User is gone, so we are done
-                eprintln!("WS Client #{} gone!", id);
+                // Can't find user => gone and we're done
                 break;
             }
         };
@@ -164,15 +233,15 @@ async fn realtime_cpus_stream(app_state: AppState, id: u32, ws: WebSocket) {
 
         match res {
             Ok(_good) => {}
-            Err(msg) => {
-                eprintln!("WS Client #{} done {:?}", id, msg);
+            Err(_) => {
+                // Error => WS gone and we're done
                 break;
             }
         }
     }
 }
 
-async fn socket_reader(app_state: AppState, id: u32, mut ws: SplitStream<WebSocket>) {
+async fn rt_cpus_reader(app_state: AppState, id: u32, mut ws: SplitStream<WebSocket>) {
     while let Some(res) = ws.next().await {
         if let Ok(msg) = res {
             match msg {
@@ -190,6 +259,14 @@ async fn socket_reader(app_state: AppState, id: u32, mut ws: SplitStream<WebSock
 
                         let mut dynamic_state = app_state.dynamic_state.lock().unwrap();
                         dynamic_state.users.insert(id, data.name);
+
+                        // TODO: This is where we get any message and use a new Mutex locked shared channel to send it for distribution
+                        //       - Get a hold of the channel.tx lock
+                        //       - Send the message
+                        //       - Maybe update some state to say we've added a message
+                        //       - Can check that we are not filling up
+                        //
+                        // ... eventually the main
                     } else {
                         eprintln!("Got: UKNOWN message: {}", s);
                     }
@@ -200,8 +277,6 @@ async fn socket_reader(app_state: AppState, id: u32, mut ws: SplitStream<WebSock
             eprintln!("Got: Error!");
         }
     }
-
-    eprintln!("Done receiving for WS Client #{}", id);
 
     // We are done receiving as socket has closed
     let mut dynamic_state = app_state.dynamic_state.lock().unwrap();
