@@ -55,7 +55,10 @@ function App(props) {
 
       ws.send(JSON.stringify(data));
 
-      setMessageLog([...messageLog, message]);
+      const len = messageLog.length;
+
+      setMessageLog([`${len + 1}. ${message}`, ...messageLog]);
+      // setMessage("");
     }
   }, [doSend]);
 
@@ -77,17 +80,24 @@ function App(props) {
     setMessage(newMessage);
   };
 
+  const handleMessageEnter = (ev) => {
+    if (ev.key === "Enter" && ev.target.value !== "") {
+      setMessage(ev.target.value);
+      sendMessage();
+    }
+  };
+
   const sendMessage = () => {
     setDoSend(!doSend);
   };
 
+  const header = `Client #${props.wsId} - ${props.wsUsername} - ${
+    props.wsCount
+  } ${props.wsCount > 1 ? "Clients" : "Client"} - Update #${props.wsEvents}`;
+
   return html`
     <main class="grid-1col">
-      <h3>
-        Client #${props.wsId} - ${props.wsUsername} - Update #${
-    props.wsEvents
-  } - ${props.wsCount} ${props.wsCount > 1 ? "Clients" : "Client"}
-      </h3>
+      <h3> ${header} </h3>
 
       <a href="${window.location.href}" target="_blank">Duplicate</a>
 
@@ -100,7 +110,7 @@ function App(props) {
 
           <div class="grid-2col-5em-1fr">
             <label for="message">Message: </label>
-            <input id="message" type="text" placeholder="Enter a message" value=${message} onInput=${handleMessage}></input>
+            <input id="message" type="text" placeholder="Enter a message" value=${message} onInput=${handleMessage} onKeyUp=${handleMessageEnter}></input>
           </div>
 
           <div>
