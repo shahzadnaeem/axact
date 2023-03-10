@@ -54,6 +54,8 @@ function App(props) {
       };
 
       ws.send(JSON.stringify(data));
+
+      setMessageLog([...messageLog, message]);
     }
   }, [doSend]);
 
@@ -80,7 +82,7 @@ function App(props) {
   };
 
   return html`
-    <main>
+    <main class="grid-1col">
       <h3>
         Client #${props.wsId} - ${props.wsUsername} - Update #${
     props.wsEvents
@@ -89,31 +91,34 @@ function App(props) {
 
       <a href="${window.location.href}" target="_blank">Duplicate</a>
 
-      <section class="page-container">
-        <section class="chat">
-          <div>
+      <section class="app-container grid-2col">
+        <section class="chat grid-4row-3a-1fr">
+          <div class="grid-2col-5em-1fr">
             <label for="name">Name: </label>
             <input id="name" type="text" placeholder="Enter your name" value=${editName} onInput=${handleName} onKeyUp=${handleNameEnter}></input>
           </div>
 
-          <div>
+          <div class="grid-2col-5em-1fr">
             <label for="message">Message: </label>
             <input id="message" type="text" placeholder="Enter a message" value=${message} onInput=${handleMessage}></input>
           </div>
 
           <div>
-            <button onClick=${sendMessage}>Send message!</button>
+            <button class="chat-send" onClick=${sendMessage}>Send message!</button>
           </div>
 
-          <div class="message-log">
+          <div class="message-log grid-1col nogap">
+            ${messageLog.map((message, i) => {
+              return html`<p key=${i}>${message}</p>`;
+            })}
           </div>
         </section>
 
-        <section class="htop">
+        <section class="htop grid-1col">
           ${props.cpus.map((cpu) => {
-            return html`<div class="cpu-info">
-              <div class="cpu-num">${cpu[0] + 1}</div>
-              <div class="bar">
+            return html`<div class="cpu-info grid-2col-a-1fr">
+              <div class="cpu-num place-center">${cpu[0] + 1}</div>
+              <div class="bar place-center">
                 <div class="bar-inner" style="width: ${cpu[1]}%"></div>
                 <label>${cpu[1].toFixed(2)}%</label>
               </div>
