@@ -30,6 +30,7 @@ function App(props) {
   const [name, setName] = useState(props.wsUsername);
   const [editName, setEditName] = useState(props.wsUsername);
   const [message, setMessage] = useState("");
+  const [messageLog, setMessageLog] = useState([]);
   const [doSend, setDoSend] = useState(false);
 
   useEffect(() => {
@@ -88,31 +89,37 @@ function App(props) {
 
       <a href="${window.location.href}" target="_blank">Duplicate</a>
 
-      <section class="form">
-        <div>
-          <label for="name">Name: </label>
-          <input id="name" type="text" placeholder="Enter your name" value=${editName} onInput=${handleName} onKeyUp=${handleNameEnter}></input>
-        </div>
+      <section class="page-container">
+        <section class="chat">
+          <div>
+            <label for="name">Name: </label>
+            <input id="name" type="text" placeholder="Enter your name" value=${editName} onInput=${handleName} onKeyUp=${handleNameEnter}></input>
+          </div>
 
-        <div>
-          <label for="message">Message: </label>
-          <input id="message" type="text" placeholder="Enter a message" value=${message} onInput=${handleMessage}></input>
-        </div>
+          <div>
+            <label for="message">Message: </label>
+            <input id="message" type="text" placeholder="Enter a message" value=${message} onInput=${handleMessage}></input>
+          </div>
 
-        <div>
-          <button onClick=${sendMessage}>Send message!</button>
-        </div>
-      </section>
-      <section>
-        ${props.cpus.map((cpu) => {
-          return html`<div class="cpu-info">
-            <div class="cpu-num">${cpu[0] + 1}</div>
-            <div class="bar">
-              <div class="bar-inner" style="width: ${cpu[1]}%"></div>
-              <label>${cpu[1].toFixed(2)}%</label>
-            </div>
-          </div>`;
-        })}
+          <div>
+            <button onClick=${sendMessage}>Send message!</button>
+          </div>
+
+          <div class="message-log">
+          </div>
+        </section>
+
+        <section class="htop">
+          ${props.cpus.map((cpu) => {
+            return html`<div class="cpu-info">
+              <div class="cpu-num">${cpu[0] + 1}</div>
+              <div class="bar">
+                <div class="bar-inner" style="width: ${cpu[1]}%"></div>
+                <label>${cpu[1].toFixed(2)}%</label>
+              </div>
+            </div>`;
+          })}
+        </section>
       </section>
     </main>
   `;

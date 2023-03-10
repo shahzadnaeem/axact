@@ -1,58 +1,91 @@
-@import url("https://fonts.googleapis.com/css2?family=Roboto&display=swap");
+:root {
+  --bg: #0f0f0f;
+  --fg: lightskyblue;
+  --bd: rgb(80, 80, 80);
+  --bg-input: #264653;
+  --fg-input: lightgray;
+}
 
-* {
-  font-family: "Roboto", sans-serif;
+.htop {
+  --bg-odd: #264653;
+  --fg-odd: rgb(191, 227, 245);
+  --bg-even: #532626;
+  --fg-even: rgb(232, 196, 196);
+  --bg-bar: rgba(101, 255, 229, 0.6);
+  --bd: rgb(134, 134, 134);
 }
 
 body {
-  background: #0f0f0f;
+  background: var(--bg);
 }
 
 main {
-  width: 30em;
+  width: 60rem;
   margin-inline: auto;
-  color: lightskyblue;
+  color: var(--fg);
   display: flex;
   flex-direction: column;
-  gap: 0.5em;
+  gap: 0.5rem;
 }
 
 section {
   display: flex;
   flex-direction: column;
-  gap: 0.5em;
+  gap: 0.5rem;
+}
+
+h1, h2, h3 {
+  margin-block: 0.5rem;
+}
+
+h3 {
+  text-align: center;
 }
 
 a {
   margin-inline: auto;
-  padding-inline: 1em;
+  padding-inline: 1rem;
   font-size: x-large;
   color: inherit;
   opacity: 50%;
   text-decoration: none;
-  border: 1px solid lightskyblue;
+  border: 1px solid var(--fg);
   border-radius: 4px;
 }
 
 a:hover {
+  cursor: pointer;
   opacity: 100%;
   transition: opacity 0.1s;
 }
 
-.form {
+section.page-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 0.5rem;
+  padding: 0.25rem;
+}
+
+.chat {
   display: flex;
   flex-direction: column;
-  gap: 0.5em;
-  padding: 1em;
-  margin-inline: auto;
+  gap: 0.5rem;
+  padding: 1rem;
 }
 
-.form div {
+.chat div {
   display: grid;
-  grid-template-columns: 5em 16em;
+  grid-template-columns: 5em 1fr;
 }
 
-.form div button {
+.chat div input {
+  background-color: var(--bg-input);
+  color: var(--fg-input);
+  border: 1px solid var(--bd);
+}
+
+.chat div button {
   grid-column: 1 / -1;
   background-color: inherit;
   color: greenyellow;
@@ -61,22 +94,26 @@ a:hover {
   opacity: 50%;
 }
 
-.form div button:hover {
-  opacity: 100%;
+.chat div button:hover {
   cursor: pointer;
+  opacity: 100%;
   transition: opacity 0.1s;
 }
 
-.cpu-info {
-  background: #264653;
-  color: white;
+.htop {
+  width: 80%;
+  margin-inline: auto;
+}
 
-  border: 1px solid rgba(245, 245, 200, 0.193);
+.cpu-info {
+  background: var(--bg-odd);
+  color: var(--fg-odd);
+
+  border: 1px solid var(--bd);
   border-radius: 4px;
 
-  /* width: 24em; */
-  height: 2em;
-  padding-left: 0.5em;
+  height: 2rem;
+  padding-left: 0.5rem;
 
   display: flex;
   align-items: center;
@@ -85,12 +122,12 @@ a:hover {
 }
 
 .cpu-info:nth-child(even) {
-  background: #532626;
-  color: rgb(234, 217, 217);
+  background: var(--bg-even);
+  color: var(--fg-even);
 }
 
 .cpu-num {
-  width: 1em;
+  width: 1rem;
   text-align: center;
 }
 
@@ -114,7 +151,7 @@ a:hover {
 
   height: 100%;
 
-  background: #2A9D8F;
+  background: var(--bg-bar);
   position: absolute;
   left: 0;
   top: 0;

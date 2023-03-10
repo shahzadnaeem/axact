@@ -23,7 +23,6 @@ use tokio::{
     task::JoinSet,
 };
 use tower_http::services::ServeDir;
-use tracing_subscriber::filter::dynamic_filter_fn;
 
 #[derive(Debug, Clone)]
 struct DynamicState {
