@@ -124,7 +124,7 @@ function App(props) {
           </section>
         </section>
 
-        <section class="css-debug htop grid-1col">
+        <section class="htop grid-1col">
           ${props.cpus.map((cpu) => {
             return html`<div class="cpu-info grid-2col-a-1fr">
               <div class="cpu-num place-center">${cpu[0] + 1}</div>
