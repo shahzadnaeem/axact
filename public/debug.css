@@ -1,0 +1,24 @@
+.css-debug {
+    --bd-width: 2px;
+    --bd-style: dotted;
+    --bd-lev1-fg: yellow;
+    --bd-lev2-fg: orange;
+    --bd-lev3-fg: orangered;
+    --bd-lev4-fg: yellowgreen;
+}
+
+.css-debug {
+    border: var(--bd-width) var(--bd-style) var(--bd-lev1-fg) !important;
+}
+
+.css-debug>section, section.css-debug {
+    border: var(--bd-width) var(--bd-style) var(--bd-lev2-fg) !important;
+}
+
+.css-debug section>section, section.css-debug>* {
+    border: var(--bd-width) var(--bd-style) var(--bd-lev3-fg) !important;
+}
+
+.css-debug section>section>div, section.css-debug>*>* {
+    border: var(--bd-width) var(--bd-style) var(--bd-lev4-fg) !important;
+}

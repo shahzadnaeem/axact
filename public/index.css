@@ -7,6 +7,8 @@
   --fg-input: lightgray;
   --gap: 0.5rem;
   --grid-gap: var(--gap);
+  --app-width: 60rem;
+  --app-height: 100vh;
 }
 
 .htop {
@@ -20,15 +22,6 @@
 
 body {
   background: var(--body-bg);
-}
-
-main {
-  background: var(--bg);
-
-  height: 100vh;
-  width: 60rem;
-  margin-inline: auto;
-  color: var(--fg);
 }
 
 h1, h2, h3 {
@@ -57,13 +50,20 @@ a:hover {
   transition: opacity 0.1s;
 }
 
+.app-base {
+  background: var(--bg);
+
+  height: var(--app-height);
+  width: var(--app-width);
+  margin-inline: auto;
+  color: var(--fg);
+}
+
 .app-container {
   height: 42rem;
 
   margin: 0.5rem;
   padding: 0.25rem;
-
-  border: 2px dotted yellow;
 }
 
 .chat {

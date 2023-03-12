@@ -96,7 +96,7 @@ function App(props) {
   } ${props.wsCount > 1 ? "Clients" : "Client"} - Update #${props.wsEvents}`;
 
   return html`
-    <main class="grid-1col">
+    <main class="app-base grid-1col">
       <h3> ${header} </h3>
 
       <a href="${window.location.href}" target="_blank">Duplicate</a>
@@ -117,14 +117,14 @@ function App(props) {
             <button class="chat-send" onClick=${sendMessage}>Send message!</button>
           </div>
 
-          <div class="message-log grid-1col nogap">
+          <section class="message-log grid-1col nogap">
             ${messageLog.map((message, i) => {
               return html`<p key=${i}>${message}</p>`;
             })}
-          </div>
+          </section>
         </section>
 
-        <section class="htop grid-1col">
+        <section class="css-debug htop grid-1col">
           ${props.cpus.map((cpu) => {
             return html`<div class="cpu-info grid-2col-a-1fr">
               <div class="cpu-num place-center">${cpu[0] + 1}</div>
