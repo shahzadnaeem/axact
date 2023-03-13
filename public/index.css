@@ -19,6 +19,7 @@
   --fg-even: rgb(232, 196, 196);
   --bg-bar: rgba(101, 255, 229, 0.6);
   --bd: rgb(134, 134, 134);
+  --bd-sep: rgba(101, 255, 229, 0.8);
 }
 
 body {
@@ -116,14 +117,33 @@ a:hover {
 }
 
 .htop-header {
+  display: inline-flex;
   margin-inline: auto;
+  margin-block: 0;
+  height: 2.5rem;
+  margin-bottom: calc(-0.5*var(--grid-gap));
   color: var(--fg-header);
 }
 
 .htop-header span {
-  display: inline-block;
+  margin-block: 0;
   width: 10rem;
+  background-color: rgb(58, 58, 58);
+  border-bottom: calc(0.5*var(--grid-gap)) solid var(--bd-sep);
 }
+
+.htop-header>span:first-of-type {
+  overflow: hidden;
+  padding-left: 0.5rem;
+  border-top-left-radius: 5px;
+}
+
+.htop-header>span:last-of-type {
+  overflow: hidden;
+  padding-right: 0.5rem;
+  border-top-right-radius: 5px;
+}
+
 
 .cpu-info {
   background: var(--bg-odd);

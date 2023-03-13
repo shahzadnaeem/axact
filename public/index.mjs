@@ -38,9 +38,9 @@ function Cpu({ cpu }) {
 
 function Htop(props) {
   return html`<section class="htop grid-1col">
-    <p class="htop-header">
-      <span>${props.hostname}</span> <span>${props.datetime}</span>
-    </p>
+    <div class="htop-header">
+      <span>${props.hostname}</span><span>${props.datetime}</span>
+    </div>
     ${props.cpus.map((cpu) => {
       return html`<${Cpu} cpu="${cpu}" />`;
     })}
