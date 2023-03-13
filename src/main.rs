@@ -30,6 +30,7 @@ use tower_http::services::ServeDir;
 struct DynamicState {
     client_id: u32,
     users: HashMap<u32, String>,
+    message: Option<WsMessage>,
 }
 
 impl DynamicState {
@@ -43,6 +44,7 @@ impl Default for DynamicState {
         DynamicState {
             client_id: 0,
             users: HashMap::new(),
+            message: None,
         }
     }
 }
@@ -69,6 +71,13 @@ struct AppState {
 struct WsDataIn {
     id: u32,
     name: String,
+    message: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+struct WsMessage {
+    id: u32,
+    name: String,
     message: String,
 }
 
@@ -80,6 +89,7 @@ struct WsData {
     ws_id: u32,
     ws_username: String,
     cpu_data: Vec<(u32, f32)>,
+    message: Option<WsMessage>,
 }
 
 type Snapshot = WsData;
@@ -142,10 +152,20 @@ fn cpu_data_gen(app_state: AppState, broadcast_tx: broadcast::Sender<Snapshot>) 
     let mut sys = System::new();
 
     loop {
-        let num_users = {
-            let dynamic_state = app_state.dynamic_state.lock().unwrap();
-            dynamic_state.users.len() as u32
+        let (num_users, message) = {
+            let mut dynamic_state = app_state.dynamic_state.lock().unwrap();
+            (
+                dynamic_state.users.len() as u32,
+                dynamic_state.message.take(),
+            )
         };
+
+        if let Some(msg) = &message {
+            eprintln!(
+                "out: MESSAGE: from_id: {}, from_name: {}, message: {}",
+                msg.id, msg.name, msg.message
+            );
+        }
 
         if num_users != 0 {
             sys.refresh_cpu();
@@ -167,6 +187,7 @@ fn cpu_data_gen(app_state: AppState, broadcast_tx: broadcast::Sender<Snapshot>) 
                 ws_username: "".to_string(),
                 ws_count: num_users,
                 cpu_data: v,
+                message,
             };
             let _ = broadcast_tx.send(data);
 
@@ -264,16 +285,34 @@ async fn rt_cpus_reader(app_state: AppState, id: u32, mut ws: SplitStream<WebSoc
                     let parsed: Result<WsDataIn, _> = serde_json::from_str(&s);
 
                     if let Ok(data) = parsed {
-                        eprintln!(
-                            "Got: id: {} [{}], name: {}, message: {}",
-                            data.id,
-                            if data.id == id { "Valid" } else { "Invalid!" },
-                            data.name,
-                            data.message
-                        );
+                        let user_valid = data.id == id;
+
+                        match &data.message {
+                            None => {
+                                eprintln!(
+                                    "in: NAME: id: {} [{}], name: {}",
+                                    data.id,
+                                    if user_valid { "Valid" } else { "Invalid!" },
+                                    &data.name,
+                                );
+                            }
+                            Some(msg) => {
+                                eprintln!(
+                                    "in: MESSAGE: id: {} [{}], name: {}, message: {}",
+                                    data.id,
+                                    if user_valid { "Valid" } else { "Invalid!" },
+                                    &data.name,
+                                    msg
+                                );
+                            }
+                        }
+
+                        if !user_valid {
+                            continue;
+                        }
 
                         let mut dynamic_state = app_state.dynamic_state.lock().unwrap();
-                        dynamic_state.users.insert(id, data.name);
+                        dynamic_state.users.insert(id, data.name.clone());
 
                         // TODO: This is where we get any message and use a new Mutex locked shared channel to send it for distribution
                         //       - Get a hold of the channel.tx lock
@@ -282,6 +321,17 @@ async fn rt_cpus_reader(app_state: AppState, id: u32, mut ws: SplitStream<WebSoc
                         //       - Can check that we are not filling up
                         //
                         // ... eventually the main
+
+                        // FIXME: Add any received message to THE message to send to
+                        //        all clients! MESSAGE LOSS CAN HAPPEN!
+
+                        if let Some(message) = data.message {
+                            dynamic_state.message = Some(WsMessage {
+                                id: data.id,
+                                name: data.name,
+                                message,
+                            });
+                        }
                     } else {
                         eprintln!("Got: UKNOWN message: {}", s);
                     }
