@@ -7,10 +7,12 @@ use axum::{
     routing::get,
     Router, Server,
 };
+use chrono::prelude::*;
 use futures::{
     stream::{SplitSink, SplitStream, StreamExt},
     SinkExt,
 };
+use gethostname::gethostname;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -28,6 +30,12 @@ use tower_http::services::ServeDir;
 struct DynamicState {
     client_id: u32,
     users: HashMap<u32, String>,
+}
+
+impl DynamicState {
+    pub fn users(self) -> u32 {
+        self.users.len() as u32
+    }
 }
 
 impl Default for DynamicState {
@@ -66,10 +74,12 @@ struct WsDataIn {
 
 #[derive(Clone, Debug, Serialize)]
 struct WsData {
+    hostname: String,
+    datetime: String,
     ws_count: u32,
     ws_id: u32,
     ws_username: String,
-    cpu_data: Vec<(usize, f32)>,
+    cpu_data: Vec<(u32, f32)>,
 }
 
 type Snapshot = WsData;
@@ -143,10 +153,16 @@ fn cpu_data_gen(app_state: AppState, broadcast_tx: broadcast::Sender<Snapshot>) 
                 .cpus()
                 .iter()
                 .enumerate()
-                .map(|cpu| (cpu.0, cpu.1.cpu_usage()))
+                .map(|cpu| (cpu.0 as u32, cpu.1.cpu_usage()))
                 .collect();
 
+            let hostname = gethostname().to_string_lossy().into_owned();
+
+            let datetime = Local::now().format("%a %e %b %T").to_string();
+
             let data = WsData {
+                hostname,
+                datetime,
                 ws_id: 0,
                 ws_username: "".to_string(),
                 ws_count: num_users,

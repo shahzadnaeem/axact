@@ -21,10 +21,31 @@ ws.onmessage = (ev) => {
   ws_events++;
 
   render(
-    html`<${App} cpus=${json.cpu_data} wsCount=${json.ws_count} wsId=${json.ws_id} wsUsername=${json.ws_username} wsEvents=${ws_events}></${App}>`,
+    html`<${App} hostname=${json.hostname} datetime=${json.datetime} cpus=${json.cpu_data} wsCount=${json.ws_count} wsId=${json.ws_id} wsUsername=${json.ws_username} wsEvents=${ws_events}></${App}>`,
     document.body
   );
 };
+
+function Cpu({ cpu }) {
+  return html`<div class="cpu-info grid-2col-a-1fr">
+    <div class="cpu-num place-center">${cpu[0] + 1}</div>
+    <div class="bar place-center">
+      <div class="bar-inner" style="width: ${cpu[1]}%"></div>
+      <label>${cpu[1].toFixed(2)}%</label>
+    </div>
+  </div>`;
+}
+
+function Htop(props) {
+  return html`<section class="htop grid-1col">
+    <p class="htop-header">
+      <span>${props.hostname}</span> <span>${props.datetime}</span>
+    </p>
+    ${props.cpus.map((cpu) => {
+      return html`<${Cpu} cpu="${cpu}" />`;
+    })}
+  </section>`;
+}
 
 function App(props) {
   const [name, setName] = useState(props.wsUsername);
@@ -93,11 +114,11 @@ function App(props) {
 
   const header = `Client #${props.wsId} - ${props.wsUsername} - ${
     props.wsCount
-  } ${props.wsCount > 1 ? "Clients" : "Client"} - Update #${props.wsEvents}`;
+  } ${props.wsCount > 1 ? "Clients" : "Client"}`; // - Update #${props.wsEvents}`;
 
   return html`
     <main class="app-base grid-1col">
-      <h3> ${header} </h3>
+      <h3>${header}</h3>
 
       <a href="${window.location.href}" target="_blank">Duplicate</a>
 
@@ -124,17 +145,12 @@ function App(props) {
           </section>
         </section>
 
-        <section class="htop grid-1col">
-          ${props.cpus.map((cpu) => {
-            return html`<div class="cpu-info grid-2col-a-1fr">
-              <div class="cpu-num place-center">${cpu[0] + 1}</div>
-              <div class="bar place-center">
-                <div class="bar-inner" style="width: ${cpu[1]}%"></div>
-                <label>${cpu[1].toFixed(2)}%</label>
-              </div>
-            </div>`;
-          })}
-        </section>
+        ${html`<${Htop}
+          cpus="${props.cpus}"
+          hostname=${props.hostname}
+          datetime=${props.datetime}
+        />`}
+
       </section>
     </main>
   `;

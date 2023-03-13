@@ -38,3 +38,7 @@
     display: grid;
     place-items: center;
 }
+
+.font-mono {
+    font-family: var(--df-fonts-mono);
+}

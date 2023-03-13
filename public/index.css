@@ -12,6 +12,7 @@
 }
 
 .htop {
+  --fg-header: rgb(101, 255, 229);
   --bg-odd: #264653;
   --fg-odd: rgb(191, 227, 245);
   --bg-even: #532626;
@@ -26,11 +27,11 @@ body {
 
 h1, h2, h3 {
   margin-block: 0.5rem;
+  font-weight: inherit;
 }
 
 h3 {
-  min-width: 40%;
-  margin-left: 30%;
+  margin-inline: auto;
 }
 
 a {
@@ -112,6 +113,16 @@ a:hover {
   padding: var(--gap);
 
   border: 1px solid var(--bd);
+}
+
+.htop-header {
+  margin-inline: auto;
+  color: var(--fg-header);
+}
+
+.htop-header span {
+  display: inline-block;
+  width: 10rem;
 }
 
 .cpu-info {

@@ -6,6 +6,18 @@
     --df-image-size: 100%;
     --df-list-style: none;
     --df-clicky-cursor: revert;
+    --df-fonts-std: system-ui,
+        'Segoe UI',
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+    --df-fonts-mono: ui-monospace,
+        SFMono-Regular,
+        Consolas,
+        'Liberation Mono',
+        Menlo,
+        monospace;
 }
 
 *,
@@ -25,26 +37,14 @@ html, body {
 body {
     line-height: var(--df-line-height);
 
-    font-family:
-        system-ui,
-        'Segoe UI',
-        Roboto,
-        Helvetica,
-        Arial,
-        sans-serif
+    font-family: var(--df-fonts-std);
 }
 
 code,
 kbd,
 samp,
 pre {
-    font-family:
-        ui-monospace,
-        SFMono-Regular,
-        Consolas,
-        'Liberation Mono',
-        Menlo,
-        monospace;
+    font-family: var(--df-fonts-mono);
     font-size: var(--df-font-size);
 }
 
