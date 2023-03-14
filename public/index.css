@@ -24,6 +24,7 @@
 
 .chat {
   --fg-send-button: rgb(173, 255, 43);
+  --fg-send-enabled: rgb(248, 255, 43);
   --fg-sent: rgb(87, 179, 87);
   --fg-received: rgb(229, 229, 113);
 }
@@ -103,12 +104,12 @@ a:hover {
 }
 
 .chat-send:disabled {
-  opacity: 30%;
+  opacity: 20%;
 }
 
 .chat-send:hover:not(:disabled) {
   cursor: pointer;
-  opacity: 100%;
+  opacity: 90%;
   transition: opacity 0.1s;
 }
 
@@ -119,6 +120,15 @@ a:hover {
   padding: 0.25rem;
 
   border: 1px solid var(--bd);
+}
+
+.message-log * {
+  overflow-anchor: none;
+}
+
+.message-log>.last-message-anchor {
+  overflow-anchor: auto;
+  height: 1px;
 }
 
 .message-log p {

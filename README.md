@@ -10,5 +10,5 @@ Cool community forks of this project:
 - [x] Visualizing 128 cores: https://github.com/useafterfree/axact
 <img width="1887" alt="223535789-4013dd26-4902-44a0-80a2-4c22f0201a62" src="https://user-images.githubusercontent.com/35079898/223571760-ff375188-44a8-46da-a16a-8ff8731bc5e1.png">
 
-- [x] Adding basic chat to we can talk about what's going on 🤓
+- [x] Adding basic chat to we can talk about what's going on. NOTE: Image shows 'bug' due to 0.1s transition on bar width - 5% CPU with 50% bar.
 <img width="1200" src="doc/WithChat.png">

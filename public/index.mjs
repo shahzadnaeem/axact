@@ -84,9 +84,10 @@ function App(props) {
     }
   }, [doSend]);
 
+  // NOTE: Need this effect to add new messages to the log
   useEffect(() => {
     if (props.message) {
-      setMessageLog([props.message, ...messageLog]);
+      setMessageLog([...messageLog, props.message]);
     }
   }, [props.message]);
 
@@ -99,6 +100,7 @@ function App(props) {
   const handleNameEnter = (ev) => {
     if (ev.key === "Enter" && editName !== "") {
       setName(editName);
+      ev.target.blur();
     }
   };
 
@@ -158,6 +160,7 @@ function App(props) {
                 <span>${message.message}</span>
               </p>`;
             })}
+            <div class="last-message-anchor"></div>
           </section>
         </section>
 
