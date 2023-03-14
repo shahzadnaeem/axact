@@ -15,55 +15,44 @@ use futures::{
 use gethostname::gethostname;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashMap,
+    collections::{HashMap, VecDeque},
     sync::{Arc, Mutex},
     time::Duration,
 };
 use sysinfo::{CpuExt, System, SystemExt};
-use tokio::{
-    sync::{broadcast, mpsc},
-    task::JoinSet,
-};
+use tokio::{sync::broadcast, task::JoinSet};
 use tower_http::services::ServeDir;
 
 #[derive(Debug, Clone)]
 struct DynamicState {
-    client_id: u32,
+    next_client_id: u32,
     users: HashMap<u32, String>,
-    message: Option<WsMessage>,
+    messages: VecDeque<WsMessage>,
 }
 
 impl DynamicState {
-    pub fn users(self) -> u32 {
+    pub fn num_users(&self) -> u32 {
         self.users.len() as u32
+    }
+
+    pub fn have_users(&self) -> bool {
+        self.num_users() != 0
     }
 }
 
 impl Default for DynamicState {
     fn default() -> Self {
         DynamicState {
-            client_id: 0,
+            next_client_id: 0,
             users: HashMap::new(),
-            message: None,
+            messages: VecDeque::new(),
         }
-    }
-}
-
-#[derive(Debug)]
-struct SharedState {
-    req_tx: mpsc::Sender<Requests>,
-}
-
-impl SharedState {
-    pub fn new(req_tx: mpsc::Sender<Requests>) -> Self {
-        SharedState { req_tx }
     }
 }
 
 #[derive(Clone)]
 struct AppState {
     broadcast_tx: broadcast::Sender<Snapshot>,
-    shared_state: Arc<Mutex<SharedState>>,
     dynamic_state: Arc<Mutex<DynamicState>>,
 }
 
@@ -86,30 +75,36 @@ struct WsData {
     hostname: String,
     datetime: String,
     ws_count: u32,
-    ws_id: u32,
-    ws_username: String,
     cpu_data: Vec<(u32, f32)>,
     message: Option<WsMessage>,
 }
 
 type Snapshot = WsData;
 
-//
-// TODO: Our outgoing messages
-//
-
 #[derive(Clone, Debug, Serialize)]
-struct ChatMessage {
-    username: String,
-    message: String,
+struct WsDataOut {
+    hostname: String,
+    datetime: String,
+    ws_count: u32,
+    ws_id: u32,
+    ws_username: String,
+    cpu_data: Vec<(u32, f32)>,
+    message: Option<WsMessage>,
 }
 
-#[derive(Clone, Debug, Serialize)]
-enum Requests {
-    Chat(ChatMessage),
+impl From<WsData> for WsDataOut {
+    fn from(it: WsData) -> Self {
+        WsDataOut {
+            hostname: it.hostname,
+            datetime: it.datetime,
+            ws_count: it.ws_count,
+            ws_id: 0,
+            ws_username: "".to_string(),
+            cpu_data: it.cpu_data,
+            message: it.message,
+        }
+    }
 }
-
-type Request = Requests;
 
 #[tokio::main]
 async fn main() {
@@ -117,14 +112,10 @@ async fn main() {
 
     let (broadcast_tx, _) = broadcast::channel::<Snapshot>(BROADCAST_CHANNEL_CAPACITY);
 
-    // TODO: Need a second channel to receive messages for distribution from the clients
-    let (req_tx, mut req_rx) = mpsc::channel::<Requests>(100);
-
     tracing_subscriber::fmt::init();
 
     let app_state = AppState {
         broadcast_tx: broadcast_tx.clone(),
-        shared_state: Arc::new(Mutex::new(SharedState::new(req_tx))),
         dynamic_state: Arc::new(Mutex::new(DynamicState::default())),
     };
 
@@ -152,51 +143,61 @@ fn cpu_data_gen(app_state: AppState, broadcast_tx: broadcast::Sender<Snapshot>) 
     let mut sys = System::new();
 
     loop {
-        let (num_users, message) = {
-            let mut dynamic_state = app_state.dynamic_state.lock().unwrap();
-            (
-                dynamic_state.users.len() as u32,
-                dynamic_state.message.take(),
-            )
-        };
-
-        if let Some(msg) = &message {
-            eprintln!(
-                "out: MESSAGE: from_id: {}, from_name: {}, message: {}",
-                msg.id, msg.name, msg.message
-            );
-        }
-
-        if num_users != 0 {
-            sys.refresh_cpu();
-            let v: Vec<_> = sys
-                .cpus()
-                .iter()
-                .enumerate()
-                .map(|cpu| (cpu.0 as u32, cpu.1.cpu_usage()))
-                .collect();
-
-            let hostname = gethostname().to_string_lossy().into_owned();
-
-            let datetime = Local::now().format("%a %e %b %T").to_string();
-
-            let data = WsData {
-                hostname,
-                datetime,
-                ws_id: 0,
-                ws_username: "".to_string(),
-                ws_count: num_users,
-                cpu_data: v,
-                message,
-            };
-            let _ = broadcast_tx.send(data);
-
-            std::thread::sleep(System::MINIMUM_CPU_UPDATE_INTERVAL);
-        } else {
+        if !have_users(&app_state) {
             println!("No users, sleeping for 1s");
             std::thread::sleep(Duration::from_secs(1));
+            continue;
         }
+
+        let ws_data = get_ws_data(&app_state, &mut sys);
+
+        let _ = broadcast_tx.send(ws_data);
+
+        std::thread::sleep(System::MINIMUM_CPU_UPDATE_INTERVAL);
     }
+}
+
+fn have_users(app_state: &AppState) -> bool {
+    let dynamic_state = app_state.dynamic_state.lock().unwrap();
+
+    dynamic_state.have_users()
+}
+
+fn get_ws_data(app_state: &AppState, sys: &mut System) -> WsData {
+    let (num_users, message) = {
+        let mut dynamic_state = app_state.dynamic_state.lock().unwrap();
+        (dynamic_state.num_users(), dynamic_state.messages.pop_back())
+    };
+
+    if let Some(msg) = &message {
+        eprintln!(
+            "out: MESSAGE: from_id: {}, from_name: {}, message: {}",
+            msg.id, msg.name, msg.message
+        );
+    }
+
+    let hostname = gethostname().to_string_lossy().into_owned();
+
+    let datetime = Local::now().format("%a %e %b %T").to_string();
+
+    sys.refresh_cpu();
+
+    let v: Vec<_> = sys
+        .cpus()
+        .iter()
+        .enumerate()
+        .map(|cpu| (cpu.0 as u32, cpu.1.cpu_usage()))
+        .collect();
+
+    let data = WsData {
+        hostname,
+        datetime,
+        ws_count: num_users,
+        cpu_data: v,
+        message,
+    };
+
+    data
 }
 
 // ============================================================================
@@ -216,9 +217,9 @@ async fn realtime_cpus_get(
 fn get_next_user_id(app_state: &AppState) -> u32 {
     let mut dynamic_state = app_state.dynamic_state.lock().unwrap();
 
-    dynamic_state.client_id += 1u32;
+    dynamic_state.next_client_id += 1u32;
 
-    let id = dynamic_state.client_id;
+    let id = dynamic_state.next_client_id;
     dynamic_state.users.insert(id, format!("Unknown-{}", &id));
 
     id
@@ -243,16 +244,17 @@ async fn realtime_cpus_stream(app_state: AppState, id: u32, ws: WebSocket) {
     println!("WS DONE for: ID #{}", id);
 }
 
-// async fn socket_writer()
 async fn rt_cpus_writer(app_state: AppState, id: u32, mut sender: SplitSink<WebSocket, Message>) {
     //
     // Get a receiver for the
     //
     let mut rx = app_state.broadcast_tx.subscribe();
 
-    while let Ok(mut msg) = rx.recv().await {
-        msg.ws_id = id;
-        msg.ws_username = {
+    while let Ok(msg) = rx.recv().await {
+        let mut msg_out = WsDataOut::from(msg);
+
+        msg_out.ws_id = id;
+        msg_out.ws_username = {
             let dynamic_state = app_state.dynamic_state.lock().unwrap();
             let possible_user = dynamic_state.users.get(&id);
             if let Some(user) = possible_user {
@@ -264,7 +266,7 @@ async fn rt_cpus_writer(app_state: AppState, id: u32, mut sender: SplitSink<WebS
         };
 
         let res = sender
-            .send(Message::Text(serde_json::to_string(&msg).unwrap()))
+            .send(Message::Text(serde_json::to_string(&msg_out).unwrap()))
             .await;
 
         match res {
@@ -287,46 +289,40 @@ async fn rt_cpus_reader(app_state: AppState, id: u32, mut ws: SplitStream<WebSoc
                     if let Ok(data) = parsed {
                         let user_valid = data.id == id;
 
-                        match &data.message {
-                            None => {
-                                eprintln!(
-                                    "in: NAME: id: {} [{}], name: {}",
-                                    data.id,
-                                    if user_valid { "Valid" } else { "Invalid!" },
-                                    &data.name,
-                                );
-                            }
-                            Some(msg) => {
-                                eprintln!(
-                                    "in: MESSAGE: id: {} [{}], name: {}, message: {}",
-                                    data.id,
-                                    if user_valid { "Valid" } else { "Invalid!" },
-                                    &data.name,
-                                    msg
-                                );
-                            }
-                        }
-
                         if !user_valid {
+                            eprintln!("in: INVALID ID: {}, actual id: {}", data.id, id);
+
                             continue;
                         }
 
                         let mut dynamic_state = app_state.dynamic_state.lock().unwrap();
-                        dynamic_state.users.insert(id, data.name.clone());
+                        let prev_name = dynamic_state.users.insert(id, data.name.clone());
 
-                        // TODO: This is where we get any message and use a new Mutex locked shared channel to send it for distribution
-                        //       - Get a hold of the channel.tx lock
-                        //       - Send the message
-                        //       - Maybe update some state to say we've added a message
-                        //       - Can check that we are not filling up
+                        if let Some(pname) = prev_name {
+                            if data.name != pname {
+                                eprintln!(
+                                    "in: NAME: id: {}, name: {} => {}",
+                                    data.id, &pname, &data.name,
+                                );
+                            }
+                        }
+
+                        // TODO: Clean current implementation up
                         //
-                        // ... eventually the main
-
-                        // FIXME: Add any received message to THE message to send to
-                        //        all clients! MESSAGE LOSS CAN HAPPEN!
+                        //   - Process incoming message (by adding type)
+                        //   - Update AppState with anything that needs to be stored
+                        //   - AppState then get checked in 'main' loop and action taken
+                        //     - NOTE: Action can be at 'main' loop or per client handler
+                        //             Eg if a client says stop updates
+                        //                or status change ...
 
                         if let Some(message) = data.message {
-                            dynamic_state.message = Some(WsMessage {
+                            eprintln!(
+                                "in: MESSAGE: id: {}, name: {}, message: {}",
+                                data.id, &data.name, &message
+                            );
+
+                            dynamic_state.messages.push_front(WsMessage {
                                 id: data.id,
                                 name: data.name,
                                 message,
