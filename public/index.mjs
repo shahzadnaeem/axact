@@ -129,6 +129,9 @@ function App(props) {
   const nameStatus = name !== editName ? "editing" : "";
   const sendDisabled = message === null;
 
+  // How many messages that can be displayed before we show the auto scroll anchor
+  const addLastMessageAnchor = messageLog.length > 10;
+
   return html`
     <main class="app-base grid-1col">
       <h3>${header}</h3>
@@ -161,7 +164,10 @@ function App(props) {
                 <span>${message.message}</span>
               </p>`;
             })}
-            <div class="last-message-anchor"></div>
+            ${
+              addLastMessageAnchor &&
+              html`<div class="last-message-anchor"></div>`
+            }
           </section>
         </section>
 

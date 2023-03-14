@@ -27,6 +27,7 @@
   --fg-send-enabled: rgb(248, 255, 43);
   --fg-sent: rgb(87, 179, 87);
   --fg-received: rgb(229, 229, 113);
+  --bd-auto-scroller: rgb(134, 134, 134);
 }
 
 body {
@@ -122,13 +123,20 @@ a:hover {
   border: 1px solid var(--bd);
 }
 
+/* Auto scrolling of message log messages via 'overflow-anchor'  */
+
 .message-log * {
   overflow-anchor: none;
 }
 
 .message-log>.last-message-anchor {
   overflow-anchor: auto;
-  height: 1px;
+}
+
+.message-log>.last-message-anchor::after {
+  display: grid;
+  content: "⁝";
+  justify-content: end;
 }
 
 .message-log p {
