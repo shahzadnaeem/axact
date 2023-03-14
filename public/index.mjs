@@ -9,26 +9,27 @@ const html = htm.bind(h);
 
 let url = new URL("/realtime/cpus", window.location.href.replace("http", "ws"));
 
-let ws_id = 0;
-let ws_events = 0;
-
 let ws = new WebSocket(url.href);
+
+// Render App whenever we get a new WS message...
+// TODO: Turn into a standard App and move WS there. Then only a single render will be needed.
 
 ws.onmessage = (ev) => {
   let json = JSON.parse(ev.data);
 
   if (json.message != null) {
-    console.log(`Data in: ${ev.data}`);
+    console.log(`Message in: ${JSON.stringify(json.message)}`);
   }
 
-  ws_id = json.ws_id;
-  ws_events++;
-
   render(
-    html`<${App} hostname=${json.hostname} datetime=${json.datetime} cpus=${json.cpu_data} wsCount=${json.ws_count} wsId=${json.ws_id} wsUsername=${json.ws_username} message=${json.message} wsEvents=${ws_events}></${App}>`,
+    html`<${App} data=${json} hostname=${json.hostname} datetime=${json.datetime} cpus=${json.cpu_data} wsCount=${json.ws_count} wsId=${json.ws_id} wsUsername=${json.ws_username} message=${json.message}></${App}>`,
     document.body
   );
 };
+
+//
+// Preact function components below -------------------------------------------
+//
 
 function Cpu({ cpu }) {
   return html`<div class="cpu-info grid-2col-a-1fr">
@@ -60,7 +61,7 @@ function App(props) {
 
   useEffect(() => {
     let data = {
-      id: ws_id,
+      id: props.wsId,
       name: `${name}`,
       message: null,
     };
@@ -73,7 +74,7 @@ function App(props) {
   useEffect(() => {
     if (message) {
       let data = {
-        id: ws_id,
+        id: props.wsId,
         name: `${name}`,
         message: `${message}`,
       };
@@ -153,7 +154,7 @@ function App(props) {
           <section class="message-log grid-1col">
             ${messageLog.map((message, i) => {
               const msgType =
-                message.id == ws_id ? "message-sent" : "message-received";
+                message.id == props.wsId ? "message-sent" : "message-received";
 
               return html`<p class="${msgType}" key=${i}>
                 <span>${message.name} [#${message.id}] </span>
