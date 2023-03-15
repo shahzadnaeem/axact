@@ -36,6 +36,7 @@ function Cpu({ cpu }) {
     <div class="cpu-num place-center">${cpu[0] + 1}</div>
     <div class="bar place-center">
       <div class="bar-inner" style="width: ${cpu[1]}%"></div>
+      <div class="bar-inner delayed" style="width: ${cpu[1]}%"></div>
       <label>${cpu[1].toFixed(2)}%</label>
     </div>
   </div>`;
