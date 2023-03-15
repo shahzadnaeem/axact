@@ -60,6 +60,10 @@ function App(props) {
   const [messageLog, setMessageLog] = useState([]);
   const [doSend, setDoSend] = useState(false);
 
+  const [autoMsg, setAutoMsg] = useState(false);
+  const [autoMsgId, setAutoMsgId] = useState(0);
+  const [timeoutId, setTimeoutId] = useState(null);
+
   useEffect(() => {
     let data = {
       id: props.wsId,
@@ -93,6 +97,46 @@ function App(props) {
     }
   }, [props.message]);
 
+  // Auto message initiator
+
+  useEffect(() => {
+    if (autoMsg) {
+      setMessage(null);
+      setAutoMsgId(0);
+
+      setTimeoutId(
+        setInterval(() => {
+          setAutoMsgId((curr) => {
+            return curr + 1;
+          });
+        }, 500)
+      );
+
+      return () => {
+        if (timeoutId) {
+          clearInterval(timeoutId);
+          setTimeoutId(null);
+        }
+      };
+    } else {
+      if (timeoutId) {
+        clearInterval(timeoutId);
+        setTimeoutId(null);
+      }
+    }
+  }, [autoMsg]);
+
+  // Auto message sender
+  useEffect(() => {
+    if (autoMsgId > 0) {
+      if (message !== null) {
+        toggleDoSend();
+      } else {
+        setMessage(`Auto message ${Math.floor(autoMsgId / 2) + 1} ...`);
+      }
+    }
+  }, [autoMsgId]);
+
   const handleName = (ev) => {
     const newName = ev.target.value;
 
@@ -115,12 +159,16 @@ function App(props) {
   const handleMessageEnter = (ev) => {
     if (ev.key === "Enter" && ev.target.value) {
       setMessage(ev.target.value);
-      sendMessage();
+      toggleDoSend();
     }
   };
 
-  const sendMessage = () => {
+  const toggleDoSend = () => {
     setDoSend(!doSend);
+  };
+
+  const handleAutoMsg = (ev) => {
+    setAutoMsg(!autoMsg);
   };
 
   const header = `Client #${props.wsId} - ${props.wsUsername} - ${
@@ -151,8 +199,12 @@ function App(props) {
             <input id="message" type="text" placeholder="Enter a message" value=${message} onInput=${handleMessage} onKeyUp=${handleMessageEnter}></input>
           </div>
 
-          <div>
-            <button class="chat-send" disabled=${sendDisabled} onClick=${sendMessage}>Send message!</button>
+          <div class="grid-2col">
+            <button class="chat-send" disabled=${sendDisabled} onClick=${toggleDoSend}>Send message!</button>
+            <div class="grid-cols">
+              <label for="auto">Auto Message</label>
+              <input type="checkbox" name="auto" checked=${autoMsg} onClick=${handleAutoMsg}></input>
+            </div>
           </div>
 
           <section class="message-log grid-1col">

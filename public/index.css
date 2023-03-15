@@ -96,7 +96,6 @@ a:hover {
 }
 
 .chat-send {
-  width: 100%;
   background-color: inherit;
   color: var(--fg-send-enabled);
   border: 1px solid var(--fg-send-button);

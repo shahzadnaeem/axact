@@ -1,3 +1,10 @@
+.grid-cols {
+    display: grid;
+    grid-auto-flow: column;
+    gap: var(--grid-gap);
+    justify-content: left;
+}
+
 .grid-1col {
     display: grid;
     grid-template-columns: 1fr;
@@ -8,7 +15,6 @@
 .grid-2col {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr;
     gap: var(--grid-gap);
 }
 
