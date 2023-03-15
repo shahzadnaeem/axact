@@ -37,9 +37,9 @@ fn get_next_user_id(app_state: &AppState) -> u32 {
     id
 }
 
-// ============================================================================
-// WS handlers
-//
+// ----------------------------------------------------------------------------
+
+// Read and write handlers
 
 async fn realtime_cpus_stream(app_state: AppState, id: u32, ws: WebSocket) {
     let (sender, receiver) = ws.split();
@@ -55,6 +55,11 @@ async fn realtime_cpus_stream(app_state: AppState, id: u32, ws: WebSocket) {
 
     println!("WS DONE for: ID #{}", id);
 }
+
+// ----------------------------------------------------------------------------
+
+// Write handler sends out data to a client
+//   CPU data and any pending chat message
 
 async fn rt_cpus_writer(app_state: AppState, id: u32, mut sender: SplitSink<WebSocket, Message>) {
     let mut rx = app_state.broadcast_tx.subscribe();
@@ -86,6 +91,14 @@ async fn rt_cpus_writer(app_state: AppState, id: u32, mut sender: SplitSink<WebS
         }
     }
 }
+
+// ----------------------------------------------------------------------------
+
+// Read handler deals with input from a client
+//     Name change
+//     Chat message - to be sent to ALL clients, including the sender.
+//                    This allows client to show separate 'sent'/'delivered' status
+//                    (not currently implemented)
 
 async fn rt_cpus_reader(app_state: AppState, id: u32, mut ws: SplitStream<WebSocket>) {
     while let Some(res) = ws.next().await {
