@@ -49,7 +49,9 @@ export default function App({ url }) {
 
       ${data &&
       html`
-        <a href="${window.location.href}" target="_blank">Duplicate</a>
+        <a class="link-button" href="${window.location.href}" target="_blank"
+          >Duplicate in New Tab</a
+        >
 
         <section class="app-container grid-2col">
           ${html`<${Chat}

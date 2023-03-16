@@ -48,3 +48,7 @@
 .font-mono {
     font-family: var(--df-fonts-mono);
 }
+
+.just-middle {
+    justify-content: center;
+}

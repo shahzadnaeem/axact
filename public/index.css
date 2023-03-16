@@ -1,13 +1,23 @@
 :root {
   --body-bg: rgb(0, 0, 60);
+  --gap: 0.5rem;
+  --grid-gap: var(--gap);
+  --wrapper-width: 60rem;
+  --app-width: var(--wrapper-width);
+}
+
+.wrapper {
+  --bg: #32054e;
+  --fg: rgb(230, 233, 176);
+  --bd: var(--fg);
+}
+
+.app-base {
   --bg: #0f0f0f;
   --fg: lightskyblue;
   --bd: rgb(80, 80, 80);
   --bg-input: #264653;
   --fg-input: lightgray;
-  --gap: 0.5rem;
-  --grid-gap: var(--gap);
-  --app-width: 60rem;
 }
 
 .htop {
@@ -42,18 +52,53 @@ h3 {
   margin-inline: auto;
 }
 
-a {
+.wrapper {
+  background-color: var(--bg);
+  color: var(--fg);
+  max-width: var(--wrapper-width);
+  margin-inline: auto;
+}
+
+.wrapper-controls {
+  padding: 0.5rem;
+  width: 100%;
+  margin-inline: auto;
+}
+
+.wrapper-controls button {
+  background-color: inherit;
+  color: inherit;
+  margin-inline: auto;
+  padding-inline: 1rem;
+  font-size: large;
+  border-radius: 4px;
+  border: 1px solid var(--bd);
+  opacity: 70%;
+}
+
+.wrapper-controls button:hover {
+  cursor: pointer;
+  opacity: 100%;
+  transition: opacity 0.1s;
+}
+
+.wrapper .warning {
+  text-align: center;
+  font-size: xx-large;
+}
+
+.link-button {
   margin-inline: auto;
   padding-inline: 1rem;
   font-size: x-large;
   color: inherit;
-  opacity: 50%;
+  opacity: 70%;
   text-decoration: none;
   border: 1px solid var(--fg);
   border-radius: 4px;
 }
 
-a:hover {
+.link-button:hover {
   cursor: pointer;
   opacity: 100%;
   transition: opacity 0.1s;
