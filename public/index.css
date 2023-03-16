@@ -8,7 +8,6 @@
   --gap: 0.5rem;
   --grid-gap: var(--gap);
   --app-width: 60rem;
-  --app-height: 100vh;
 }
 
 .htop {
@@ -63,7 +62,6 @@ a:hover {
 .app-base {
   background: var(--bg);
 
-  height: var(--app-height);
   width: var(--app-width);
   margin-inline: auto;
   color: var(--fg);

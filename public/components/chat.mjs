@@ -30,6 +30,7 @@ export default function Chat({ ws, ws_id, ws_username, ws_message }) {
   const [timeoutId, setTimeoutId] = useState(null);
 
   // Inputs
+
   useOnChange(ws_message, () => {
     if (ws_message) {
       setMessageLog([...messageLog, ws_message]);
