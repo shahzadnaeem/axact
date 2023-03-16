@@ -7,9 +7,18 @@ import htm from "https://unpkg.com/htm?module";
 
 // ----------------------------------------------------------------------------
 
+// A simple wrapper around useEffect to prevent re-render triggered inifinite loop
+// NOTE: Probably don't need this. A simple useEffect() is probably obvious here :)
+
+function useOnChange(value, callback) {
+  useEffect(() => {
+    callback();
+  }, [value]);
+}
+
 const html = htm.bind(h);
 
-export default function Chat({ ws, ws_id, ws_username, message }) {
+export default function Chat({ ws, ws_id, ws_username, ws_message }) {
   const [name, setName] = useState(ws_username);
   const [editName, setEditName] = useState(ws_username);
   const [chatMessage, setChatMessage] = useState(null);
@@ -19,6 +28,15 @@ export default function Chat({ ws, ws_id, ws_username, message }) {
   const [autoMsg, setAutoMsg] = useState(false);
   const [autoMsgId, setAutoMsgId] = useState(0);
   const [timeoutId, setTimeoutId] = useState(null);
+
+  // Inputs
+  useOnChange(ws_message, () => {
+    if (ws_message) {
+      setMessageLog([...messageLog, ws_message]);
+    }
+  });
+
+  // Outputs
 
   useEffect(() => {
     let data = {
@@ -45,15 +63,6 @@ export default function Chat({ ws, ws_id, ws_username, message }) {
       setChatMessage(null);
     }
   }, [doSend]);
-
-  // NOTE: This hack is currently needed to add incoming messages to the log
-  //       Dependency is the message we add to prevent an infinite loop as
-  //       this component will re-render due to the state change.
-  useEffect(() => {
-    if (message) {
-      setMessageLog([...messageLog, message]);
-    }
-  }, [message]);
 
   // Auto message initiator
   useEffect(() => {
@@ -86,7 +95,7 @@ export default function Chat({ ws, ws_id, ws_username, message }) {
   // Auto message sender
   useEffect(() => {
     if (autoMsgId > 0) {
-      if (message !== null) {
+      if (chatMessage !== null) {
         toggleDoSend();
       } else {
         setChatMessage(`Auto message ${Math.floor(autoMsgId / 2) + 1} ...`);
@@ -129,7 +138,7 @@ export default function Chat({ ws, ws_id, ws_username, message }) {
   };
 
   const nameStatus = name !== editName ? "editing" : "";
-  const sendDisabled = message === null;
+  const sendDisabled = chatMessage === null;
 
   // How many messages that can be displayed before we show the auto scroll anchor
   const addLastMessageAnchor = messageLog.length > 10;
