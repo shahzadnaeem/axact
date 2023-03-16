@@ -50,7 +50,7 @@ export default function App({ url }) {
       ${data &&
       html`
         <a class="link-button" href="${window.location.href}" target="_blank"
-          >Duplicate in New Tab</a
+          >Start in New Tab</a
         >
 
         <section class="app-container grid-2col">

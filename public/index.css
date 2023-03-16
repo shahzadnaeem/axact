@@ -57,6 +57,7 @@ h3 {
   color: var(--fg);
   max-width: var(--wrapper-width);
   margin-inline: auto;
+  padding-top: 0.5rem;
 }
 
 .wrapper-controls {
