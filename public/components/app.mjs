@@ -13,7 +13,7 @@ import Htop from "./htop.mjs";
 
 const html = htm.bind(h);
 
-export default function App({ url }) {
+export default function App({ url, close }) {
   const ws = useRef(null);
   const [data, setData] = useState(null);
 
@@ -46,13 +46,10 @@ export default function App({ url }) {
   return html`
     <main class="app-base grid-1col">
       <h3>${header}</h3>
+      <button class="close-button" onClick=${() => close()}>❌</button>
 
       ${data &&
       html`
-        <a class="link-button" href="${window.location.href}" target="_blank"
-          >Start in New Tab</a
-        >
-
         <section class="app-container grid-2col">
           ${html`<${Chat}
             ws=${ws.current}

@@ -15,13 +15,13 @@ const html = htm.bind(h);
 let url = new URL("/realtime/cpus", window.location.href.replace("http", "ws"));
 
 // Unique identifier for app - needed as key
-let appIdx = 0;
+let appId = 0;
 
 function Wrapper({ url }) {
-  const [apps, setApps] = useState([appIdx++]);
+  const [apps, setApps] = useState([appId++]);
 
   const addApp = () => {
-    setApps([...apps, appIdx++]);
+    setApps([...apps, appId++]);
   };
 
   const rmAllApps = () => setApps([]);
@@ -34,8 +34,16 @@ function Wrapper({ url }) {
     setApps(apps.slice(0, -1));
   };
 
+  const rmAppById = (id) => {
+    setApps(apps.filter((i) => i !== id));
+  };
+
   return html`<div class="wrapper grid-1col">
     <section class="wrapper-controls grid-cols just-middle">
+      <a class="link-button" href="${window.location.href}" target="_blank"
+        >Duplicate ⮵</a
+      >
+
       <button class="wrapper-button" onClick=${addApp}>Add App</button>
       <button class="wrapper-button" onClick=${rmAllApps}>
         Remove All Apps
@@ -49,10 +57,16 @@ function Wrapper({ url }) {
     </section>
 
     ${apps.length
-      ? apps.map((appIdx) => {
-          return html`<${App} key=${appIdx} url=${url} />`;
+      ? apps.map((appId) => {
+          return html`<${App}
+            key=${appId}
+            url=${url}
+            close=${() => rmAppById(appId)}
+          />`;
         })
-      : html`<section class="warning">No Apps!</section>`}
+      : html`<section class="warning">
+          <button onClick=${addApp}>No Apps - Click to Add</button>
+        </section>`}
   </div>`;
 }
 

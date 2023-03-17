@@ -9,6 +9,9 @@
 .wrapper {
   --bg: #32054e;
   --fg: rgb(230, 233, 176);
+  --fg-link: lightskyblue;
+  --fg-warning: rgb(245, 60, 60);
+  --fg-warning-hover: rgb(82, 171, 82);
   --bd: var(--fg);
 }
 
@@ -18,6 +21,7 @@
   --bd: rgb(80, 80, 80);
   --bg-input: #264653;
   --fg-input: lightgray;
+  --fg-close: rgb(233, 14, 58);
 }
 
 .htop {
@@ -49,7 +53,18 @@ h1, h2, h3 {
 }
 
 h3 {
+  font-size: large;
   margin-inline: auto;
+}
+
+button {
+  background-color: inherit;
+  color: inherit;
+  border: none;
+  border-color: inherit;
+  border: 1px solid;
+  border-radius: 4px;
+  padding-inline: 1rem;
 }
 
 .wrapper {
@@ -63,16 +78,10 @@ h3 {
 .wrapper-controls {
   padding: 0.5rem;
   width: 100%;
-  margin-inline: auto;
 }
 
 .wrapper-controls button {
-  background-color: inherit;
-  color: inherit;
-  margin-inline: auto;
-  padding-inline: 1rem;
   font-size: large;
-  border-radius: 4px;
   border: 1px solid var(--bd);
   opacity: 70%;
 }
@@ -84,18 +93,30 @@ h3 {
 }
 
 .wrapper .warning {
+  color: var(--fg-warning);
   text-align: center;
-  font-size: xx-large;
+  font-size: x-large;
+  padding-bottom: 1rem;
+}
+
+.wrapper .warning button {
+  opacity: 70%;
+}
+
+.wrapper .warning button:hover {
+  color: var(--fg-warning-hover);
+  cursor: pointer;
+  opacity: 100%;
+  transition: opacity 0.2s;
 }
 
 .link-button {
-  margin-inline: auto;
   padding-inline: 1rem;
-  font-size: x-large;
-  color: inherit;
+  font-size: large;
+  color: var(--fg-link);
   opacity: 70%;
   text-decoration: none;
-  border: 1px solid var(--fg);
+  border: 1px solid var(--fg-link);
   border-radius: 4px;
 }
 
@@ -105,7 +126,25 @@ h3 {
   transition: opacity 0.1s;
 }
 
+.close-button {
+  font-size: x-large;
+  color: var(--fg-close);
+  padding-inline: 0;
+  border: none;
+  opacity: 70%;
+  position: absolute;
+  top: 0.25rem;
+  right: 0.5rem;
+}
+
+.close-button:hover {
+  cursor: pointer;
+  opacity: 100%;
+  transition: opacity 0.1s;
+}
+
 .app-base {
+  position: relative;
   background: var(--bg);
 
   width: var(--app-width);
@@ -140,11 +179,9 @@ h3 {
 }
 
 .chat-send {
-  background-color: inherit;
   color: var(--fg-send-enabled);
   border: 1px solid var(--fg-send-button);
   opacity: 50%;
-  border-radius: 4px;
 }
 
 .chat-send:disabled {
