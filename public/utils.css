@@ -30,6 +30,18 @@
     gap: var(--grid-gap);
 }
 
+.grid-rows {
+    display: grid;
+    grid-auto-flow: row;
+    gap: var(--grid-gap);
+}
+
+.grid-2row-a-1fr {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    gap: var(--grid-gap);
+}
+
 .grid-4row-3a-1fr {
     display: grid;
     grid-template-rows: auto auto auto 1fr;

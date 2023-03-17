@@ -1,4 +1,4 @@
-import { h } from "https://unpkg.com/preact@latest?module";
+import { h, createContext } from "https://unpkg.com/preact@latest?module";
 import {
   useState,
   useEffect,
@@ -7,37 +7,13 @@ import htm from "https://unpkg.com/htm?module";
 
 // ----------------------------------------------------------------------------
 
-// A simple wrapper around useEffect to prevent re-render triggered inifinite loop
-// NOTE: Probably don't need this. A simple useEffect() is probably obvious here :)
-
-function useOnChange(value, callback) {
-  useEffect(() => {
-    callback();
-  }, [value]);
-}
-
 const html = htm.bind(h);
 
-export default function Chat({ ws, ws_id, ws_username, ws_message }) {
+// ----------------------------------------------------------------------------
+
+function SendName({ ws, ws_id, ws_username }) {
   const [name, setName] = useState(ws_username);
   const [editName, setEditName] = useState(ws_username);
-  const [chatMessage, setChatMessage] = useState(null);
-  const [messageLog, setMessageLog] = useState([]);
-  const [doSend, setDoSend] = useState(false);
-
-  const [autoMsg, setAutoMsg] = useState(false);
-  const [autoMsgId, setAutoMsgId] = useState(0);
-  const [timeoutId, setTimeoutId] = useState(null);
-
-  // Inputs
-
-  useOnChange(ws_message, () => {
-    if (ws_message) {
-      setMessageLog([...messageLog, ws_message]);
-    }
-  });
-
-  // Outputs
 
   useEffect(() => {
     let data = {
@@ -51,19 +27,32 @@ export default function Chat({ ws, ws_id, ws_username, ws_message }) {
     document.title = name;
   }, [name]);
 
-  useEffect(() => {
-    if (chatMessage) {
-      let data = {
-        id: ws_id,
-        name: `${name}`,
-        message: `${chatMessage}`,
-      };
+  const handleName = (ev) => {
+    const newName = ev.target.value;
 
-      ws.send(JSON.stringify(data));
+    setEditName(newName);
+  };
 
-      setChatMessage(null);
+  const handleNameEnter = (ev) => {
+    if (ev.key === "Enter" && editName !== "") {
+      setName(editName);
+      ev.target.blur();
     }
-  }, [doSend]);
+  };
+
+  const nameStatus = name !== editName ? "editing" : "";
+
+  return html`<div class="grid-2col-5em-1fr">
+    <label for="name">Name: </label>
+    <input class="${nameStatus}" id="name" type="text" placeholder="Enter your name" value=${editName} onInput=${handleName} onKeyUp=${handleNameEnter}></input>
+  </div>`;
+}
+
+// ----------------------------------------------------------------------------
+
+function AutoMessage({ setChatMessage, setAutoMsgId }) {
+  const [autoMsg, setAutoMsg] = useState(false);
+  const [timeoutId, setTimeoutId] = useState(null);
 
   // Auto message initiator
   useEffect(() => {
@@ -93,6 +82,39 @@ export default function Chat({ ws, ws_id, ws_username, ws_message }) {
     }
   }, [autoMsg]);
 
+  const handleAutoMsg = (ev) => {
+    setAutoMsg(!autoMsg);
+  };
+
+  return html`<div class="grid-cols">
+    <label for="auto">Auto Message</label>
+    <input type="checkbox" name="auto" checked=${autoMsg} onClick=${handleAutoMsg}></input>
+    </div>`;
+}
+
+// ----------------------------------------------------------------------------
+
+function SendMessage({ ws, ws_id, ws_username }) {
+  const [chatMessage, setChatMessage] = useState(null);
+  const [doSend, setDoSend] = useState(false);
+
+  const [autoMsgId, setAutoMsgId] = useState(0);
+
+  // Outputs
+  useEffect(() => {
+    if (chatMessage) {
+      let data = {
+        id: ws_id,
+        name: `${ws_username}`,
+        message: `${chatMessage}`,
+      };
+
+      ws.send(JSON.stringify(data));
+
+      setChatMessage(null);
+    }
+  }, [doSend]);
+
   // Auto message sender
   useEffect(() => {
     if (autoMsgId > 0) {
@@ -103,19 +125,6 @@ export default function Chat({ ws, ws_id, ws_username, ws_message }) {
       }
     }
   }, [autoMsgId]);
-
-  const handleName = (ev) => {
-    const newName = ev.target.value;
-
-    setEditName(newName);
-  };
-
-  const handleNameEnter = (ev) => {
-    if (ev.key === "Enter" && editName !== "") {
-      setName(editName);
-      ev.target.blur();
-    }
-  };
 
   const handleMessage = (ev) => {
     const newMessage = ev.target.value || null;
@@ -134,50 +143,78 @@ export default function Chat({ ws, ws_id, ws_username, ws_message }) {
     setDoSend(!doSend);
   };
 
-  const handleAutoMsg = (ev) => {
-    setAutoMsg(!autoMsg);
-  };
-
-  const nameStatus = name !== editName ? "editing" : "";
   const sendDisabled = chatMessage === null;
+
+  return html`<div class="grid-2col-5em-1fr">
+      <label for="message">Message: </label>
+      <input id="message" type="text" placeholder="Enter a message" value=${chatMessage} onInput=${handleMessage} onKeyUp=${handleMessageEnter}></input>
+    </div>
+
+    <div class="grid-2col">
+      <button class="chat-send" disabled=${sendDisabled} onClick=${toggleDoSend}>Send message!</button>
+      ${html`<${AutoMessage}
+        setChatMessage=${setChatMessage}
+        setAutoMsgId=${setAutoMsgId}
+      />`}
+    </div>`;
+}
+
+function ChatControls({ ws, ws_id, ws_username }) {
+  return html` <div class="grid-rows">
+    ${html`<${SendName} ws=${ws} ws_id=${ws_id} ws_username=${ws_username} />`}
+    ${html`<${SendMessage}
+      ws=${ws}
+      ws_id=${ws_id}
+      ws_username=${ws_username}
+    />`}
+  </div>`;
+}
+
+// ----------------------------------------------------------------------------
+
+// A simple wrapper around useEffect to prevent re-render triggered inifinite loop
+// NOTE: Probably don't need this. A simple useEffect() is probably obvious here :)
+
+function useOnChange(value, callback) {
+  useEffect(() => {
+    callback();
+  }, [value]);
+}
+
+function ChatMessagesLog({ ws_id, ws_message }) {
+  const [messageLog, setMessageLog] = useState([]);
+
+  useOnChange(ws_message, () => {
+    if (ws_message) {
+      setMessageLog([...messageLog, ws_message]);
+    }
+  });
 
   // How many messages that can be displayed before we show the auto scroll anchor
   const addLastMessageAnchor = messageLog.length > 10;
 
-  return html`
-      <section class="chat grid-4row-3a-1fr">
-        <div class="grid-2col-5em-1fr">
-          <label for="name">Name: </label>
-          <input class="${nameStatus}" id="name" type="text" placeholder="Enter your name" value=${editName} onInput=${handleName} onKeyUp=${handleNameEnter}></input>
-        </div>
-      
-        <div class="grid-2col-5em-1fr">
-          <label for="message">Message: </label>
-          <input id="message" type="text" placeholder="Enter a message" value=${chatMessage} onInput=${handleMessage} onKeyUp=${handleMessageEnter}></input>
-        </div>
-      
-        <div class="grid-2col">
-          <button class="chat-send" disabled=${sendDisabled} onClick=${toggleDoSend}>Send message!</button>
-          <div class="grid-cols">
-            <label for="auto">Auto Message</label>
-            <input type="checkbox" name="auto" checked=${autoMsg} onClick=${handleAutoMsg}></input>
-          </div>
-        </div>
-      
-        <section class="message-log grid-1col">
-          ${messageLog.map((message, i) => {
-            const msgType =
-              message.id == ws_id ? "message-sent" : "message-received";
+  return html`<section class="message-log grid-1col">
+    ${messageLog.map((message, i) => {
+      const msgType = message.id == ws_id ? "message-sent" : "message-received";
 
-            return html`<p class="${msgType}" key=${i}>
-              <span>${message.name} [#${message.id}] </span>
-              <span>${message.message}</span>
-            </p>`;
-          })}
-          ${
-            addLastMessageAnchor &&
-            html`<div class="last-message-anchor"></div>`
-          }
-        </section>
-      </section>`;
+      return html`<p class="${msgType}" key=${i}>
+        <span>${message.name} [#${message.id}] </span>
+        <span>${message.message}</span>
+      </p>`;
+    })}
+    ${addLastMessageAnchor && html`<div class="last-message-anchor"></div>`}
+  </section>`;
+}
+
+// ----------------------------------------------------------------------------
+
+export default function Chat({ ws, ws_id, ws_username, ws_message }) {
+  return html`<section class="chat grid-2row-a-1fr">
+    ${html`<${ChatControls}
+      ws=${ws}
+      ws_id=${ws_id}
+      ws_username=${ws_username}
+    />`}
+    ${html`<${ChatMessagesLog} ws_id=${ws_id} ws_message=${ws_message} />`}
+  </section>`;
 }
