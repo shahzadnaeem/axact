@@ -3,7 +3,6 @@
   --gap: 0.5rem;
   --grid-gap: var(--gap);
   --wrapper-width: 60rem;
-  --app-width: var(--wrapper-width);
 }
 
 .wrapper {
@@ -54,7 +53,7 @@ h1, h2, h3 {
 
 h3 {
   font-size: large;
-  margin-inline: auto;
+  text-align: center;
 }
 
 button {
@@ -147,7 +146,7 @@ button {
   position: relative;
   background: var(--bg);
 
-  width: var(--app-width);
+  min-width: 100%;
   margin-inline: auto;
   color: var(--fg);
 }
