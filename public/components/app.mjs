@@ -58,9 +58,10 @@ export default function App({ url, close }) {
             ws_message=${data.message}
           />`}
           ${html`<${Htop}
-            cpus=${data.cpu_data}
             hostname=${data.hostname}
             datetime=${data.datetime}
+            cpus=${data.cpu_data}
+            memory=${data.mem_data}
           />`}
         </section>
       `}

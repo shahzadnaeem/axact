@@ -32,6 +32,10 @@
   --bg-bar: rgba(107, 239, 217, 0.8);
   --bd: rgb(134, 134, 134);
   --bd-sep: rgba(101, 255, 229, 0.8);
+  --bg-mem: rgb(24, 24, 93);
+  --bg-mem-bar: rgb(148, 215, 54);
+  --fg-mem: rgb(200, 215, 255);
+  --fg-mem-bar: rgb(222, 222, 222);
 }
 
 .chat {
@@ -253,7 +257,7 @@ button {
   margin-inline: auto;
   margin-block: 0;
   height: 2.5rem;
-  margin-bottom: calc(-0.5*var(--grid-gap));
+  /* margin-bottom: calc(-0.5*var(--grid-gap)); */
   color: var(--fg-header);
 }
 
@@ -329,4 +333,24 @@ button {
   opacity: 30%;
   height: calc(33% - 4px);
   top: 3px;
+}
+
+.mem-info {
+  font-weight: bold;
+  background: var(--bg-mem);
+  color: var(--fg-mem);
+
+  padding-left: 2.0rem;
+
+  border: 1px solid var(--bd);
+  border-radius: 4px;
+}
+
+.mem-bar {
+  height: 2.0rem;
+  color: var(--fg-mem-bar);
+}
+
+.mem-bar-inner {
+  background: var(--bg-mem-bar);
 }

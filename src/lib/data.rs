@@ -15,11 +15,31 @@ pub struct WsMessage {
 }
 
 #[derive(Clone, Debug, Serialize)]
+pub struct MemoryData {
+    total: u64,
+    free: u64,
+    available: u64,
+    used: u64,
+}
+
+impl MemoryData {
+    pub fn new(total: u64, free: u64, available: u64, used: u64) -> Self {
+        MemoryData {
+            total,
+            free,
+            available,
+            used,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize)]
 pub struct WsData {
     hostname: String,
     datetime: String,
     ws_count: u32,
     cpu_data: Vec<(u32, f32)>,
+    mem_data: MemoryData,
     message: Option<WsMessage>,
 }
 
@@ -29,6 +49,7 @@ impl WsData {
         datetime: String,
         ws_count: u32,
         cpu_data: Vec<(u32, f32)>,
+        mem_data: MemoryData,
         message: Option<WsMessage>,
     ) -> Self {
         WsData {
@@ -36,6 +57,7 @@ impl WsData {
             datetime,
             ws_count,
             cpu_data,
+            mem_data,
             message,
         }
     }
@@ -51,6 +73,7 @@ pub struct WsDataOut {
     ws_id: u32,
     ws_username: String,
     cpu_data: Vec<(u32, f32)>,
+    mem_data: MemoryData,
     message: Option<WsMessage>,
 }
 
@@ -63,6 +86,7 @@ impl From<WsData> for WsDataOut {
             ws_id: 0,
             ws_username: "".to_string(),
             cpu_data: base.cpu_data,
+            mem_data: base.mem_data,
             message: base.message,
         }
     }

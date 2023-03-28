@@ -70,15 +70,23 @@ pub fn get_ws_data(app_state: &AppState, sys: &mut System) -> WsData {
     let datetime = Local::now().format("%a %e %b %T").to_string();
 
     sys.refresh_cpu();
+    sys.refresh_memory();
 
-    let v: Vec<_> = sys
+    let cpu_data: Vec<_> = sys
         .cpus()
         .iter()
         .enumerate()
         .map(|cpu| (cpu.0 as u32, cpu.1.cpu_usage()))
         .collect();
 
-    let data = WsData::new(hostname, datetime, num_users, v, message);
+    let mem_data: MemoryData = MemoryData::new(
+        sys.total_memory(),
+        sys.free_memory(),
+        sys.available_memory(),
+        sys.used_memory(),
+    );
+
+    let data = WsData::new(hostname, datetime, num_users, cpu_data, mem_data, message);
 
     data
 }
