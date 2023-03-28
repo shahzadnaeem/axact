@@ -23,6 +23,13 @@
   --fg-close: rgb(233, 14, 58);
 }
 
+.app-controls {
+  --fg-button: var(--fg);
+  --fg-paused: yellow;
+  --bd-button: var(--fg-button);
+  --bd-paused: firebrick;
+}
+
 .htop {
   --fg-header: rgb(101, 255, 229);
   --bg-odd: #264653;
@@ -160,6 +167,32 @@ button {
 
   margin: 0.5rem;
   padding: 0.25rem;
+}
+
+.app-controls {
+  padding: 0.5rem;
+  width: 100%;
+}
+
+.app-controls button {
+  padding-inline: 1rem;
+  font-size: large;
+  color: var(--fg-button);
+  opacity: 70%;
+  text-decoration: none;
+  border: 1px solid var(--bd-button);
+  border-radius: 4px;
+}
+
+.app-controls button:hover {
+  cursor: pointer;
+  opacity: 100%;
+  transition: opacity 0.1s;
+}
+
+.app-controls button.paused {
+  color: var(--fg-paused);
+  border: 1px solid var(--bd-paused);
 }
 
 .chat {

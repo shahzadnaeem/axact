@@ -23,7 +23,7 @@ function Cpu({ cpu }) {
     <div class="bar place-center">
       <div class="bar-inner" style="width: ${cpu[1]}%"></div>
       <div class="bar-inner delayed" style="width: ${cpu[1]}%"></div>
-      <label>${cpu[1].toFixed(2)}%</label>
+      <label>${cpu[1].toFixed(1)}%</label>
     </div>
   </div>`;
 }
@@ -31,13 +31,12 @@ function Cpu({ cpu }) {
 function toGB(bytes) {
   const gbs = (1.0 * bytes) / (1024 * 1024 * 1024);
 
-  return gbs.toFixed(2);
+  return gbs.toFixed(1);
 }
 
 function MemBar({ memory }) {
-  let percentUsed = ((100.0 * toGB(memory.used)) / toGB(memory.total)).toFixed(
-    2
-  );
+  let percentUsed = (100.0 * toGB(memory.used)) / toGB(memory.total);
+  percentUsed = percentUsed.toFixed(1);
 
   return html`<div class="grid-1col">
     <div class="bar mem-bar place-center">
