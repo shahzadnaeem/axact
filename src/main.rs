@@ -30,7 +30,7 @@ async fn main() {
     tokio::task::spawn_blocking(move || cpu_data_gen(app_state, broadcast_tx));
 
     const PORT: u16 = 7032;
-    let bind_addr = format!("127.0.0.1:{PORT}");
+    let bind_addr = format!("0.0.0.0:{PORT}"); // Addr must be 0.0.0.0 - esp Windows
 
     let server = Server::bind(&bind_addr.parse().unwrap()).serve(router.into_make_service());
     let addr = server.local_addr();
@@ -38,7 +38,12 @@ async fn main() {
     let system = System::new();
     let sys_name = system.name().unwrap_or("Unknown".to_string());
 
-    println!("Listening on http://{addr}... [{sys_name}]");
+    if sys_name != "Windows" {
+        println!("Listening on http://{addr}... [{sys_name}]");
+    } else {
+        // Local connection thing with Windows
+        println!("Listening on http://127.0.0.1:{PORT}... [{sys_name}]");
+    }
 
     server.await.unwrap();
 }
