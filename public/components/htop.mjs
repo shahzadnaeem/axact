@@ -8,7 +8,8 @@ const html = htm.bind(h);
 export default function Htop({ hostname, datetime, cpus, memory }) {
   return html`<section class="htop grid-1col">
     <div class="htop-header">
-      <span>${hostname}</span><span>${datetime}</span>
+      <div>${hostname}</div>
+      <div>${datetime}</div>
     </div>
     <${Memory} memory="${memory}" />
     ${cpus.map((cpu) => {

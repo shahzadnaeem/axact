@@ -287,29 +287,30 @@ button {
 
 .htop-header {
   display: inline-flex;
+  width: 80%;
   margin-inline: auto;
   margin-block: 0;
-  height: 2.5rem;
+  height: 2.0rem;
   /* margin-bottom: calc(-0.5*var(--grid-gap)); */
   color: var(--fg-header);
 }
 
-.htop-header span {
+.htop-header div {
   margin-block: 0;
-  width: 10rem;
+  width: 100%;
   background-color: rgb(58, 58, 58);
   border-bottom: calc(0.5*var(--grid-gap)) solid var(--bd-sep);
 }
 
-.htop-header>span:first-of-type {
+.htop-header>div:first-of-type {
   overflow: hidden;
-  padding-left: 0.5rem;
+  width: 90%;
+  text-align: center;
   border-top-left-radius: 5px;
 }
 
-.htop-header>span:last-of-type {
+.htop-header>div:last-of-type {
   overflow: hidden;
-  padding-right: 0.5rem;
   border-top-right-radius: 5px;
 }
 

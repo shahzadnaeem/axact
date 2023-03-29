@@ -61,12 +61,15 @@ export default function App({ url, close }) {
       <section class="grid-2col">
         <div></div>
         <div class="app-controls grid-cols just-middle">
-          <button
-            class=${"pause-button" + (paused ? " paused" : "")}
-            onClick=${() => setPaused((p) => !p)}
-          >
-            ${paused ? "Resume" : "Pause"}
-          </button>
+          ${htopData &&
+          html`
+            <button
+              class=${"pause-button" + (paused ? " paused" : "")}
+              onClick=${() => setPaused((p) => !p)}
+            >
+              ${paused ? "Resume" : "Pause"}
+            </button>
+          `}
         </div>
       </section>
 
@@ -81,8 +84,7 @@ export default function App({ url, close }) {
             ws_username=${chatData.ws_username}
             ws_message=${chatData.message}
           />`}
-          ${htopData &&
-          html`<${Htop}
+          ${html`<${Htop}
             hostname=${htopData.hostname}
             datetime=${htopData.datetime}
             cpus=${htopData.cpu_data}

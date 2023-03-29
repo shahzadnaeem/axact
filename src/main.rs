@@ -2,6 +2,7 @@ use axact::{app_state::*, data::*, data_gen::*, handlers::*};
 
 use axum::{routing::get, Router, Server};
 use std::sync::{Arc, Mutex};
+use sysinfo::{System, SystemExt};
 use tokio::sync::broadcast;
 use tower_http::services::ServeDir;
 
@@ -28,10 +29,16 @@ async fn main() {
 
     tokio::task::spawn_blocking(move || cpu_data_gen(app_state, broadcast_tx));
 
-    let server = Server::bind(&"0.0.0.0:7032".parse().unwrap()).serve(router.into_make_service());
+    const PORT: u16 = 7032;
+    let bind_addr = format!("127.0.0.1:{PORT}");
+
+    let server = Server::bind(&bind_addr.parse().unwrap()).serve(router.into_make_service());
     let addr = server.local_addr();
 
-    println!("Listening on http://{addr} ...");
+    let system = System::new();
+    let sys_name = system.name().unwrap_or("Unknown".to_string());
+
+    println!("Listening on http://{addr}... [{sys_name}]");
 
     server.await.unwrap();
 }
