@@ -6,6 +6,7 @@ use axum::{
         State, WebSocketUpgrade,
     },
     response::IntoResponse,
+    Json,
 };
 use futures::{
     stream::{SplitSink, SplitStream, StreamExt},
@@ -35,6 +36,14 @@ fn get_next_user_id(app_state: &AppState) -> u32 {
     dynamic_state.users.insert(id, format!("Unknown-{}", &id));
 
     id
+}
+
+// /cpus handler
+
+pub async fn cpus_get(State(app_state): State<AppState>) -> impl IntoResponse {
+    let sys_data = get_sys_data(&app_state);
+
+    Json(sys_data)
 }
 
 // ----------------------------------------------------------------------------

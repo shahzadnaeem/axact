@@ -12,11 +12,12 @@ use crate::data::*;
 
 // ----------------------------------------------------------------------------
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct DynamicState {
     pub next_client_id: u32,
     pub users: HashMap<u32, String>,
     pub messages: VecDeque<WsMessage>,
+    pub system: System,
 }
 
 impl DynamicState {
@@ -35,11 +36,12 @@ impl Default for DynamicState {
             next_client_id: 0,
             users: HashMap::new(),
             messages: VecDeque::new(),
+            system: System::new(),
         }
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AppState {
     pub broadcast_tx: broadcast::Sender<Snapshot>,
     pub dynamic_state: Arc<Mutex<DynamicState>>,
@@ -53,21 +55,11 @@ pub fn have_users(app_state: &AppState) -> bool {
     dynamic_state.have_users()
 }
 
-pub fn get_ws_data(app_state: &AppState, sys: &mut System) -> WsData {
-    let (num_users, message) = {
-        let mut dynamic_state = app_state.dynamic_state.lock().unwrap();
-        (dynamic_state.num_users(), dynamic_state.messages.pop_back())
-    };
-
-    if let Some(msg) = &message {
-        eprintln!(
-            "out: MESSAGE: from_id: {}, from_name: {}, message: {}",
-            msg.id, msg.name, msg.message
-        );
-    }
-
+pub fn get_sys_data(app_state: &AppState) -> WsData {
     let hostname = gethostname().to_string_lossy().into_owned();
     let datetime = Local::now().format("%a %e %b %T").to_string();
+
+    let sys = &mut app_state.dynamic_state.lock().unwrap().system;
 
     sys.refresh_cpu();
     sys.refresh_memory();
@@ -86,7 +78,28 @@ pub fn get_ws_data(app_state: &AppState, sys: &mut System) -> WsData {
         sys.used_memory(),
     );
 
-    let data = WsData::new(hostname, datetime, num_users, cpu_data, mem_data, message);
+    let data = WsData::new(hostname, datetime, 0, cpu_data, mem_data, None);
+
+    data
+}
+
+pub fn get_ws_data(app_state: &AppState) -> WsData {
+    let (num_users, message) = {
+        let mut dynamic_state = app_state.dynamic_state.lock().unwrap();
+        (dynamic_state.num_users(), dynamic_state.messages.pop_back())
+    };
+
+    if let Some(msg) = &message {
+        eprintln!(
+            "out: MESSAGE: from_id: {}, from_name: {}, message: {}",
+            msg.id, msg.name, msg.message
+        );
+    }
+
+    let mut data = get_sys_data(app_state);
+
+    data.set_ws_count(num_users);
+    data.set_message(message);
 
     data
 }

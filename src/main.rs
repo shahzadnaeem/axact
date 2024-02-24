@@ -1,6 +1,7 @@
 use axact::{app_state::*, data::*, data_gen::*, handlers::*};
 
 use axum::{routing::get, Router, Server};
+use std::error::Error;
 use std::sync::{Arc, Mutex};
 use sysinfo::{System, SystemExt};
 use tokio::sync::broadcast;
@@ -9,7 +10,7 @@ use tower_http::services::ServeDir;
 // ----------------------------------------------------------------------------
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn Error>> {
     const BROADCAST_CHANNEL_CAPACITY: usize = 1;
 
     let (broadcast_tx, _) = broadcast::channel::<Snapshot>(BROADCAST_CHANNEL_CAPACITY);
@@ -25,6 +26,7 @@ async fn main() {
         // Serve all files in 'public'
         .nest_service("/", ServeDir::new("public"))
         .route("/realtime/cpus", get(realtime_cpus_get))
+        .route("/cpus", get(cpus_get))
         .with_state(app_state.clone());
 
     tokio::task::spawn_blocking(move || cpu_data_gen(app_state, broadcast_tx));
@@ -32,7 +34,7 @@ async fn main() {
     const PORT: u16 = 7032;
     let bind_addr = format!("0.0.0.0:{PORT}"); // Addr must be 0.0.0.0 - esp Windows
 
-    let server = Server::bind(&bind_addr.parse().unwrap()).serve(router.into_make_service());
+    let server = Server::bind(&bind_addr.parse()?).serve(router.into_make_service());
     let addr = server.local_addr();
 
     let system = System::new();
@@ -45,5 +47,7 @@ async fn main() {
         println!("Listening on http://127.0.0.1:{PORT}... [{sys_name}]");
     }
 
-    server.await.unwrap();
+    server.await?;
+
+    Ok(())
 }

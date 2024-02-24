@@ -19,6 +19,7 @@ export default function App({ url, close }) {
   const [data, setData] = useState(null);
   const [chatData, setChatData] = useState(null);
   const [htopData, setHtopData] = useState(null);
+  const [pausedCount, setPausedCount] = useState(0);
 
   useEffect(() => {
     ws.current = new WebSocket(url);
@@ -45,9 +46,23 @@ export default function App({ url, close }) {
       setChatData(data);
       if (!paused) {
         setHtopData(data);
+      } else {
+        setPausedCount((c) => c + 1);
       }
     }
   }, [data, paused]);
+
+  useEffect(() => {
+    if (!paused) {
+      setPausedCount(0);
+    }
+  }, [paused]);
+
+  const pause_spinner = () => {
+    const spinner = ["⚫", "⚫", "⚫", "⚪", "⚪" /*"𝍠", "𝍡", "𝍢", "𝍣", "𝍤",*/];
+    let idx = pausedCount % spinner.length;
+    return spinner[idx];
+  };
 
   const header = chatData
     ? `🟢 Client #${chatData.ws_id} - ${chatData.ws_username} - ${
@@ -67,7 +82,7 @@ export default function App({ url, close }) {
               class=${"pause-button" + (paused ? " paused" : "")}
               onClick=${() => setPaused((p) => !p)}
             >
-              ${paused ? "Resume" : "Pause"}
+              ${paused ? `Resume ${pause_spinner()}` : "Pause"}
             </button>
           `}
         </div>

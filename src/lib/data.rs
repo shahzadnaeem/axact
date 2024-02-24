@@ -61,6 +61,14 @@ impl WsData {
             message,
         }
     }
+
+    pub fn set_ws_count(self: &mut Self, n: u32) {
+        self.ws_count = n;
+    }
+
+    pub fn set_message(self: &mut Self, msg: Option<WsMessage>) {
+        self.message = msg;
+    }
 }
 
 pub type Snapshot = WsData;
