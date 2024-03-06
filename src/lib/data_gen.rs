@@ -55,8 +55,8 @@ impl DataGen for AppState {
 
         if let Some(msg) = &message {
             eprintln!(
-                "out: MESSAGE: from_id: {}, from_name: {}, message: {}",
-                msg.id, msg.name, msg.message
+                "out: MESSAGE: from_id: {}, from_name: {}, to_id: {}, message: {}",
+                msg.id, msg.name, msg.to_id, msg.message
             );
         }
 

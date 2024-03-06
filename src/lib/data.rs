@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use std::{
     collections::{HashMap, VecDeque},
+    mem,
     sync::{Arc, Mutex},
 };
 
@@ -14,6 +15,7 @@ use tokio::sync::broadcast;
 pub struct WsDataIn {
     pub id: u32,
     pub name: String,
+    pub to_id: u32,
     pub message: Option<String>,
 }
 
@@ -21,6 +23,7 @@ pub struct WsDataIn {
 pub struct WsMessage {
     pub id: u32,
     pub name: String,
+    pub to_id: u32,
     pub message: String,
 }
 
@@ -90,31 +93,48 @@ pub struct WsDataOut {
     ws_count: u32,
     ws_id: u32,
     ws_username: String,
+    users: Vec<(u32, String)>,
     cpu_data: Vec<(u32, f32)>,
     mem_data: MemoryData,
     message: Option<WsMessage>,
 }
 
-impl From<WsData> for WsDataOut {
-    fn from(base: WsData) -> Self {
+impl WsDataOut {
+    fn from_with_message_filter(base: WsData, to_id: u32, username: &String) -> Self {
+        let mut message = base.message.clone();
+
+        if let Some(msg) = base.message {
+            if msg.to_id != 0 && msg.to_id != to_id && msg.id != to_id {
+                message = None;
+
+                eprintln!("Not sending messge for {} to {}", msg.to_id, username);
+            }
+        }
+
         WsDataOut {
             hostname: base.hostname,
             datetime: base.datetime,
             ws_count: base.ws_count,
             ws_id: 0,
             ws_username: "".to_string(),
+            users: vec![],
             cpu_data: base.cpu_data,
             mem_data: base.mem_data,
-            message: base.message,
+            message: message,
         }
     }
 }
 
 impl WsDataOut {
-    pub fn new(base: WsData, id: u32, username: String) -> Self {
-        let mut res = WsDataOut::from(base);
+    pub fn new(base: WsData, id: u32, username: String, users: Vec<(u32, String)>) -> Self {
+        let mut res = WsDataOut::from_with_message_filter(base, id, &username);
+
         res.ws_id = id;
         res.ws_username = username;
+        // TODO: Sending this all the time is not good!
+        //       Causes rebuilding of users list in UI
+        //       Need multiple messages to the UI - CPU, User Update, Chat Message
+        res.users = users;
 
         res
     }
