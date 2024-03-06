@@ -1,4 +1,4 @@
-use crate::{app_state::*, data::*};
+use crate::{data::*, data_gen::*};
 
 use axum::{
     extract::{
@@ -40,8 +40,8 @@ fn get_next_user_id(app_state: &AppState) -> u32 {
 
 // /cpus handler
 
-pub async fn cpus_get(State(app_state): State<AppState>) -> impl IntoResponse {
-    let sys_data = get_sys_data(&app_state);
+pub async fn cpus_get(State(mut app_state): State<AppState>) -> impl IntoResponse {
+    let sys_data = app_state.get_sys_data();
 
     Json(sys_data)
 }

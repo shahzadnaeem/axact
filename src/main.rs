@@ -1,4 +1,4 @@
-use axact::{app_state::*, data::*, data_gen::*, handlers::*};
+use axact::{data::*, data_gen::*, handlers::*};
 
 use axum::{routing::get, Router, Server};
 use std::error::Error;
@@ -22,14 +22,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
         dynamic_state: Arc::new(Mutex::new(DynamicState::default())),
     };
 
+    let cloned_app_state = app_state.clone();
+
+    // CPU data generator - sends CPU data via 'broadcast_tx'
+    tokio::task::spawn_blocking(move || cpu_data_gen(cloned_app_state, broadcast_tx));
+
     let router = Router::new()
         // Serve all files in 'public'
         .nest_service("/", ServeDir::new("public"))
-        .route("/realtime/cpus", get(realtime_cpus_get))
+        .route("/realtime/cpus", get(realtime_cpus_get)) // Websocket
         .route("/cpus", get(cpus_get))
-        .with_state(app_state.clone());
-
-    tokio::task::spawn_blocking(move || cpu_data_gen(app_state, broadcast_tx));
+        .with_state(app_state);
 
     const PORT: u16 = 7032;
     let bind_addr = format!("0.0.0.0:{PORT}"); // Addr must be 0.0.0.0 - esp Windows

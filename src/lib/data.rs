@@ -1,5 +1,15 @@
 use serde::{Deserialize, Serialize};
 
+use std::{
+    collections::{HashMap, VecDeque},
+    sync::{Arc, Mutex},
+};
+
+use sysinfo::{System, SystemExt};
+use tokio::sync::broadcast;
+
+// ----------------------------------------------------------------------------
+
 #[derive(Debug, Deserialize)]
 pub struct WsDataIn {
     pub id: u32,
@@ -108,4 +118,41 @@ impl WsDataOut {
 
         res
     }
+}
+
+// ----------------------------------------------------------------------------
+
+#[derive(Debug)]
+pub struct DynamicState {
+    pub next_client_id: u32,
+    pub users: HashMap<u32, String>,
+    pub messages: VecDeque<WsMessage>,
+    pub system: System,
+}
+
+impl DynamicState {
+    pub fn num_users(&self) -> u32 {
+        self.users.len() as u32
+    }
+
+    pub fn have_users(&self) -> bool {
+        self.num_users() != 0
+    }
+}
+
+impl Default for DynamicState {
+    fn default() -> Self {
+        DynamicState {
+            next_client_id: 0,
+            users: HashMap::new(),
+            messages: VecDeque::new(),
+            system: System::new(),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct AppState {
+    pub broadcast_tx: broadcast::Sender<Snapshot>,
+    pub dynamic_state: Arc<Mutex<DynamicState>>,
 }
