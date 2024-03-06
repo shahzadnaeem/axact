@@ -98,6 +98,7 @@ export default function App({ url, close }) {
             ws_id=${chatData.ws_id}
             ws_username=${chatData.ws_username}
             ws_message=${chatData.message}
+            users=${chatData.users}
           />`}
           ${html`<${Htop}
             hostname=${htopData.hostname}

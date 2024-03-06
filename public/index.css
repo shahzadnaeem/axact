@@ -208,7 +208,8 @@ button {
   font-style: italic;
 }
 
-.chat div input {
+.chat div input,
+.chat div select {
   background-color: var(--bg-input);
   color: var(--fg-input);
   border: 1px solid var(--bd);

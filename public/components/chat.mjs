@@ -18,6 +18,7 @@ function SendName({ ws, ws_id, ws_username }) {
   useEffect(() => {
     let data = {
       id: ws_id,
+      to_id: 0,
       name: `${name}`,
       message: null,
     };
@@ -45,6 +46,30 @@ function SendName({ ws, ws_id, ws_username }) {
   return html`<div class="grid-2col-5em-1fr">
     <label for="name">Name: </label>
     <input class="${nameStatus}" id="name" type="text" placeholder="Enter your name" value=${editName} onInput=${handleName} onKeyUp=${handleNameEnter}></input>
+  </div>`;
+}
+
+// ----------------------------------------------------------------------------
+
+// EXPERIMENTAL: Send message to a specific user...
+
+function SentTo({ users, toId, setToId }) {
+  const handleChange = (ev) => {
+    const newToId = parseInt(ev.target.value);
+
+    setToId(newToId);
+  };
+
+  // TODO: This updates too often due to User info being send with CPU data
+
+  return html`<div class="grid-2col-5em-1fr">
+    <label for="name">To: </label>
+    <select value="${toId}" onChange=${handleChange}>
+      <option value="0">Everyone</option>
+      ${users.map(
+        (u, _i) => html`<option key=${u[0]} value="${u[0]}">${u[1]}</option>`
+      )}
+    </select>
   </div>`;
 }
 
@@ -94,7 +119,7 @@ function AutoMessage({ setChatMessage, setAutoMsgId }) {
 
 // ----------------------------------------------------------------------------
 
-function SendMessage({ ws, ws_id, ws_username }) {
+function SendMessage({ ws, ws_id, ws_username, toId }) {
   const [chatMessage, setChatMessage] = useState(null);
   const [doSend, setDoSend] = useState(false);
 
@@ -105,6 +130,7 @@ function SendMessage({ ws, ws_id, ws_username }) {
     if (chatMessage) {
       let data = {
         id: ws_id,
+        to_id: toId,
         name: `${ws_username}`,
         message: `${chatMessage}`,
       };
@@ -159,13 +185,17 @@ function SendMessage({ ws, ws_id, ws_username }) {
     </div>`;
 }
 
-function ChatControls({ ws, ws_id, ws_username }) {
+function ChatControls({ ws, ws_id, ws_username, users }) {
+  const [toId, setToId] = useState(0);
+
   return html` <div class="grid-rows">
     ${html`<${SendName} ws=${ws} ws_id=${ws_id} ws_username=${ws_username} />`}
+    ${html`<${SentTo} users=${users} toId=${toId} setToId=${setToId} />`}
     ${html`<${SendMessage}
       ws=${ws}
       ws_id=${ws_id}
       ws_username=${ws_username}
+      toId=${toId}
     />`}
   </div>`;
 }
@@ -208,12 +238,13 @@ function ChatMessagesLog({ ws_id, ws_message }) {
 
 // ----------------------------------------------------------------------------
 
-export default function Chat({ ws, ws_id, ws_username, ws_message }) {
+export default function Chat({ ws, ws_id, ws_username, ws_message, users }) {
   return html`<section class="chat grid-2row-a-1fr">
     ${html`<${ChatControls}
       ws=${ws}
       ws_id=${ws_id}
       ws_username=${ws_username}
+      users=${users}
     />`}
     ${html`<${ChatMessagesLog} ws_id=${ws_id} ws_message=${ws_message} />`}
   </section>`;
