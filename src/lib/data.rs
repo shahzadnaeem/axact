@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 
 use std::{
     collections::{HashMap, VecDeque},
-    mem,
     sync::{Arc, Mutex},
 };
 
