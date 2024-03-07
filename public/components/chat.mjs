@@ -2,6 +2,7 @@ import { h, createContext } from "https://unpkg.com/preact@latest?module";
 import {
   useState,
   useEffect,
+  useCallback,
 } from "https://unpkg.com/preact@latest/hooks/dist/hooks.module.js?module";
 import htm from "https://unpkg.com/htm?module";
 
@@ -62,13 +63,25 @@ function SentTo({ users, toId, setToId }) {
 
   // TODO: This updates too often due to User info being send with CPU data
 
+  let selected = 0;
+
+  let user = users.forEach((u) => {
+    if (u[0] === toId) {
+      selected = toId;
+    }
+  });
+
+  const gen_option = (value, user, selected) => {
+    let option = html`<option key="${value}" value="${value}">${user}</option>`;
+
+    return option;
+  };
+
   return html`<div class="grid-2col-5em-1fr">
     <label for="name">To: </label>
-    <select value="${toId}" onChange=${handleChange}>
-      <option value="0">Everyone</option>
-      ${users.map(
-        (u, _i) => html`<option key=${u[0]} value="${u[0]}">${u[1]}</option>`
-      )}
+    <select onChange=${handleChange} value="${selected}">
+      ${gen_option(0, "Everyone", selected)}
+      ${users.map((u, _i) => gen_option(u[0], u[1], selected))}
     </select>
   </div>`;
 }
@@ -188,7 +201,7 @@ function SendMessage({ ws, ws_id, ws_username, toId }) {
 function ChatControls({ ws, ws_id, ws_username, users }) {
   const [toId, setToId] = useState(0);
 
-  return html` <div class="grid-rows">
+  return html`<div class="grid-rows">
     ${html`<${SendName} ws=${ws} ws_id=${ws_id} ws_username=${ws_username} />`}
     ${html`<${SentTo} users=${users} toId=${toId} setToId=${setToId} />`}
     ${html`<${SendMessage}

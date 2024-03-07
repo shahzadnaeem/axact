@@ -18,6 +18,7 @@ export default function App({ url, close }) {
   const [paused, setPaused] = useState(false);
   const [data, setData] = useState(null);
   const [chatData, setChatData] = useState(null);
+  const [usersData, setUsersData] = useState([]);
   const [htopData, setHtopData] = useState(null);
   const [pausedCount, setPausedCount] = useState(0);
 
@@ -41,9 +42,27 @@ export default function App({ url, close }) {
     };
   }, []);
 
+  const usersHaveChanged = (users) => {
+    let currUsers = JSON.stringify(usersData);
+    let newUsers = JSON.stringify(users);
+    let changed = currUsers !== newUsers;
+
+    if (changed) {
+      console.log(`Changed users: ${newUsers}`);
+      console.log(`Current users: ${currUsers}`);
+    }
+
+    return changed;
+  };
+
   useEffect(() => {
     if (data) {
       setChatData(data);
+
+      if (usersHaveChanged(data.users)) {
+        setUsersData(data.users);
+      }
+
       if (!paused) {
         setHtopData(data);
       } else {
@@ -98,7 +117,7 @@ export default function App({ url, close }) {
             ws_id=${chatData.ws_id}
             ws_username=${chatData.ws_username}
             ws_message=${chatData.message}
-            users=${chatData.users}
+            users=${usersData}
           />`}
           ${html`<${Htop}
             hostname=${htopData.hostname}

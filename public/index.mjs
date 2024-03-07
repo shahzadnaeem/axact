@@ -1,9 +1,5 @@
 import { h, render } from "https://unpkg.com/preact@latest?module";
-import {
-  useState,
-  useEffect,
-  useRef,
-} from "https://unpkg.com/preact@latest/hooks/dist/hooks.module.js?module";
+import { useState } from "https://unpkg.com/preact@latest/hooks/dist/hooks.module.js?module";
 import htm from "https://unpkg.com/htm?module";
 
 import App from "./components/app.mjs";
