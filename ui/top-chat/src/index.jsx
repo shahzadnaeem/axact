@@ -5,7 +5,11 @@ import { render } from "preact";
 
 // ----------------------------------------------------------------------------
 
-let url = new URL("/realtime/cpus", "ws://0.0.0.0:7032");
+const WS_PORT = 7032;
+let href = window.location.href.replace("http", "ws");
+href = href.replace(/:[0-9]+/,`:${WS_PORT}`);
+
+let url = new URL("/realtime/cpus", href);
 
 // Unique identifier for app - needed as key
 let appId = 0;
