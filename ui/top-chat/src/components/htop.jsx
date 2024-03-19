@@ -53,9 +53,10 @@ function MemBar({ memory }) {
 function MemoryRow({ name, value }) {
   return (
     <div class="grid-1col place-center">
-      <div class="grid-2col">
+      <div class="grid-3col-name-value-unit">
         <span>{name}</span>
-        <span>{toGB(value)}GB</span>
+        <span>{toGB(value)}</span>
+        <span>GB</span>
       </div>
     </div>
   );

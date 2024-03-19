@@ -30,6 +30,20 @@
     gap: var(--grid-gap);
 }
 
+.grid-3col-name-value-unit {
+    display: grid;
+    grid-template-columns: 2fr 3em 1fr;
+    gap: calc(var(--grid-gap)/2);
+}
+
+.grid-3col-name-value-unit span {
+    /* border: 1px solid red; */
+}
+
+.grid-3col-name-value-unit span:nth-child(2) {
+    justify-self: right;
+}
+
 .grid-rows {
     display: grid;
     grid-auto-flow: row;
