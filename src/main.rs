@@ -56,10 +56,12 @@ fn print_listening_message(addr: SocketAddr, port: u16) {
     let sys_name = get_system_name();
 
     if sys_name != "Windows" {
-        println!("Listening on http://{addr}... [{sys_name}]");
+        println!("Listening     on http://{addr}... [{sys_name}]");
+        println!("Standalone UI on http://0.0.0.0:5173");
     } else {
         // Local connection thing with Windows
-        println!("Listening on http://127.0.0.1:{port}... [{sys_name}]");
+        println!("Listening     on http://127.0.0.1:{port}... [{sys_name}]");
+        println!("Standalone UI on http://127.0.0.1:5173");
     }
 }
 

@@ -1,0 +1,73 @@
+:root {
+    --df-line-height: 1.5;
+    --df-margin: 0;
+    --df-padding: 0;
+    --df-font-size: 1em;
+    --df-image-size: 100%;
+    --df-list-style: none;
+    --df-clicky-cursor: revert;
+    --df-fonts-std: system-ui,
+        'Segoe UI',
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+    --df-fonts-mono: ui-monospace,
+        SFMono-Regular,
+        Consolas,
+        'Liberation Mono',
+        Menlo,
+        monospace;
+}
+
+*,
+::before,
+::after {
+    box-sizing: border-box;
+}
+
+* {
+    margin: var(--df-margin);
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    line-height: var(--df-line-height);
+
+    font-family: var(--df-fonts-std);
+}
+
+code,
+kbd,
+samp,
+pre {
+    font-family: var(--df-fonts-mono);
+    font-size: var(--df-font-size);
+}
+
+button,
+input,
+optgroup,
+select,
+textarea {
+    font-family: inherit;
+    font-size: 100%;
+    line-height: var(--df-line-height);
+    margin: var(--df-margin);
+}
+
+a, button {
+    cursor: var(--df-clicky-cursor);
+}
+
+ol, ul, menu {
+    list-style: var(--df-list-style);
+}
+
+img {
+    max-inline-size: var(--df-image-size);
+    max-block-size: var(--df-image-size);
+}
